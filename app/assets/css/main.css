@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme {
+  --color-cerise: oklch(61.883% 0.21014 352.82);
+  --color-cerise-50: oklch(91.365% 0.04172 344.66);
+  --color-cerise-100: oklch(87.655% 0.06049 345.7);
+  --color-cerise-200: oklch(80.284% 0.10157 346.4);
+  --color-cerise-300: oklch(73.307% 0.1424 348.22);
+  --color-cerise-400: oklch(67.175% 0.17965 350.06);
+  --color-cerise-500: oklch(61.883% 0.21014 352.82);
+  --color-cerise-600: oklch(54.079% 0.20232 354.87);
+  --color-cerise-700: oklch(43.992% 0.16179 354.31);
+  --color-cerise-800: oklch(33.322% 0.11808 353.33);
+  --color-cerise-900: oklch(21.647% 0.0695 352.11);
+  --color-cerise-950: oklch(15.236% 0.04329 347.37);
+}
+
+:root {
+  --ui-primary: var(--color-cerise-500);
+  --ui-primary-50: var(--color-cerise-50);
+  --ui-primary-100: var(--color-cerise-100);
+  --ui-primary-200: var(--color-cerise-200);
+  --ui-primary-300: var(--color-cerise-300);
+  --ui-primary-400: var(--color-cerise-400);
+  --ui-primary-500: var(--color-cerise-500);
+  --ui-primary-600: var(--color-cerise-600);
+  --ui-primary-700: var(--color-cerise-700);
+  --ui-primary-800: var(--color-cerise-800);
+  --ui-primary-900: var(--color-cerise-900);
+  --ui-primary-950: var(--color-cerise-950);
+}
