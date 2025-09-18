@@ -14,6 +14,9 @@
   --color-cerise-800: oklch(33.322% 0.11808 353.33);
   --color-cerise-900: oklch(21.647% 0.0695 352.11);
   --color-cerise-950: oklch(15.236% 0.04329 347.37);
+
+  --font-Inter: "Inter", "sans-serif";
+  --font-Poppins: "Poppins", "sans-serif";
 }
 
 :root {
