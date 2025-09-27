@@ -15,6 +15,19 @@
   --color-cerise-900: oklch(21.647% 0.0695 352.11);
   --color-cerise-950: oklch(15.236% 0.04329 347.37);
 
+  --color-medium-purple: oklch(60.932% 0.24391 318.75);
+  --color-medium-purple-50: oklch(91.316% 0.05107 319.9);
+  --color-medium-purple-100: oklch(87.555% 0.07378 319.62);
+  --color-medium-purple-200: oklch(80.017% 0.12143 319.46);
+  --color-medium-purple-300: oklch(72.962% 0.16875 319.71);
+  --color-medium-purple-400: oklch(66.551% 0.20999 319.32);
+  --color-medium-purple-500: oklch(60.932% 0.24391 318.75);
+  --color-medium-purple-600: oklch(52.946% 0.23455 318.08);
+  --color-medium-purple-700: oklch(43.104% 0.18744 318.19);
+  --color-medium-purple-800: oklch(32.696% 0.13668 318.37);
+  --color-medium-purple-900: oklch(21.351% 0.08081 318.89);
+  --color-medium-purple-950: oklch(15.068% 0.04963 319.82);
+
   --font-Inter: "Inter", "sans-serif";
   --font-Poppins: "Poppins", "sans-serif";
 }
@@ -32,4 +45,17 @@
   --ui-primary-800: var(--color-cerise-800);
   --ui-primary-900: var(--color-cerise-900);
   --ui-primary-950: var(--color-cerise-950);
+
+  --ui-secondary: var(--color-medium-purple-500);
+  --ui-secondary-50: var(--color-medium-purple-50);
+  --ui-secondary-100: var(--color-medium-purple-100);
+  --ui-secondary-200: var(--color-medium-purple-200);
+  --ui-secondary-300: var(--color-medium-purple-300);
+  --ui-secondary-400: var(--color-medium-purple-400);
+  --ui-secondary-500: var(--color-medium-purple-500);
+  --ui-secondary-600: var(--color-medium-purple-600);
+  --ui-secondary-700: var(--color-medium-purple-700);
+  --ui-secondary-800: var(--color-medium-purple-800);
+  --ui-secondary-900: var(--color-medium-purple-900);
+  --ui-secondary-950: var(--color-medium-purple-950);
 }
