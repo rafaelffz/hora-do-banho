@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/libsql";
-import { env } from "../env";
+import { env } from "../../app/lib/env";
 
 import * as schema from "./schema";
 

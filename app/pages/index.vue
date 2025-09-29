@@ -1,5 +1,9 @@
 <script lang="ts" setup>
-const router = useRouter();
+const { loggedIn } = useUserSession();
+
+if (loggedIn.value) {
+  navigateTo("/dashboard");
+}
 </script>
 
 <template>
@@ -18,11 +22,7 @@ const router = useRouter();
         </div>
 
         <div>
-          <UButton
-            variant="solid"
-            class="cursor-pointer w-24 text-white flex items-center justify-center"
-            @click="router.push('/login')"
-          >
+          <UButton variant="solid" class="cursor-pointer w-24 text-white flex items-center justify-center" to="/login">
             Entrar
           </UButton>
         </div>
@@ -38,7 +38,7 @@ const router = useRouter();
           e tosa para pets.
         </p>
 
-        <UButton size="xl" class="text-white text-base px-6 py-3 mt-12 cursor-pointer" @click="router.push('/login')">
+        <UButton size="xl" class="text-white text-base px-6 py-3 mt-12 cursor-pointer" to="/login">
           <Icon name="tabler:rocket" class="size-6" />
           Começar Agora
         </UButton>

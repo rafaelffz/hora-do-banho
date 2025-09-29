@@ -1,7 +1,9 @@
 <script lang="ts" setup>
-const authStore = useAuthStore();
+const { loggedIn } = useUserSession();
 
-const router = useRouter();
+if (loggedIn.value) {
+  navigateTo("/dashboard");
+}
 </script>
 
 <template>
@@ -27,7 +29,7 @@ const router = useRouter();
           </div>
 
           <div>
-            <UButton variant="subtle" color="primary" class="cursor-pointer" block @click="authStore.signIn">
+            <UButton variant="subtle" color="primary" class="cursor-pointer" block external to="/api/auth/google">
               <Icon name="devicon:google" />
               Entrar com o Google
             </UButton>
@@ -35,7 +37,7 @@ const router = useRouter();
         </div>
       </div>
 
-      <UButton color="secondary" variant="solid" class="z-10 cursor-pointer text-white" @click="router.push('/')">
+      <UButton color="secondary" variant="solid" class="z-10 cursor-pointer text-white" to="/">
         <Icon name="tabler:arrow-left" />
         Voltar para Página Inicial
       </UButton>
