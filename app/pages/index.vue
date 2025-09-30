@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-const { loggedIn } = useUserSession();
+const { loggedIn } = useUserSession()
 
 if (loggedIn.value) {
-  navigateTo("/dashboard");
+  navigateTo("/dashboard")
 }
 </script>
 
@@ -14,28 +14,36 @@ if (loggedIn.value) {
 
     <div class="container mx-auto px-4 relative z-10 flex flex-col items-center h-full">
       <nav
-        class="bg-gray-100/90 border border-gray-300 w-full max-w-3xl rounded-xl p-2 mt-4 flex items-center justify-between"
+        class="bg-gray-900/90 border border-gray-600 w-full max-w-3xl rounded-xl p-2 mt-4 flex items-center justify-between"
       >
-        <div class="flex items-center gap-2">
-          <img src="@/assets/images/icon.svg" alt="Logo Hora do Banho" class="size-10" />
-          <p class="font-Poppins text-lg md:text-xl font-semibold text-gray-800">Hora do Banho</p>
-        </div>
+        <Logo />
 
         <div>
-          <UButton variant="solid" class="cursor-pointer w-24 text-white flex items-center justify-center" to="/login">
+          <UButton
+            variant="solid"
+            class="cursor-pointer w-24 text-white flex items-center justify-center"
+            to="/login"
+          >
             Entrar
           </UButton>
         </div>
       </nav>
 
-      <div class="text-center text-white max-w-3xl h-full flex flex-col items-center justify-center">
-        <h1 class="text-3xl md:text-4xl font-bold text-shadow-sm mb-6 text-shadow-gray-700 leading-tight">
-          Transforme a gestão do seu <span class="bg-primary px-1">banho e tosa</span> de forma inteligente
+      <div
+        class="text-center text-white max-w-3xl h-full flex flex-col items-center justify-center"
+      >
+        <h1
+          class="text-3xl md:text-4xl font-bold text-shadow-sm mb-6 text-shadow-gray-700 leading-tight"
+        >
+          Transforme a gestão do seu <span class="bg-primary px-1">banho e tosa</span> de forma
+          inteligente
         </h1>
 
-        <p class="text-lg md:text-2xl text-gray-200 text-shadow-sm text-shadow-gray-700 leading-tight">
-          Aumente a produtividade do seu negócio com um sistema completo para agendamento e gestão de serviços de banho
-          e tosa para pets.
+        <p
+          class="text-lg md:text-2xl text-gray-200 text-shadow-sm text-shadow-gray-700 leading-tight"
+        >
+          Aumente a produtividade do seu negócio com um sistema completo para agendamento e gestão
+          de serviços de banho e tosa para pets.
         </p>
 
         <UButton size="xl" class="text-white text-base px-6 py-3 mt-12 cursor-pointer" to="/login">

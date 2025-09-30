@@ -1,14 +1,16 @@
 <script lang="ts" setup>
-const { loggedIn } = useUserSession();
+const { loggedIn } = useUserSession()
 
 if (loggedIn.value) {
-  navigateTo("/dashboard");
+  navigateTo("/dashboard")
 }
 </script>
 
 <template>
   <div class="h-dvh w-full font-Inter">
-    <div class="bg-[url('@/assets/images/bg-login.jpg')] h-dvh w-full bg-contain brightness-[30%] absolute"></div>
+    <div
+      class="bg-[url('@/assets/images/bg-login.jpg')] h-dvh w-full bg-contain brightness-[30%] absolute"
+    ></div>
 
     <div class="flex flex-col size-full justify-center items-center px-4 gap-8">
       <div class="w-full max-w-xl rounded-xl bg-gray-100 brightness-90 z-10 p-4 space-y-8">
@@ -20,16 +22,25 @@ if (loggedIn.value) {
           <div class="text-black text-3xl font-bold text-center">
             <div class="space-y-6">
               <h1 class="text-balance text-2xl md:text-3xl text-gray-800">
-                Entre na <span class="text-primary">Hora do Banho</span> e agende os banhos dos pets com facilidade!
+                Entre na <span class="text-primary">Hora do Banho</span> e agende os banhos dos pets
+                com facilidade!
               </h1>
               <p class="mt-2 text-sm md:text-base font-normal text-balance text-gray-600">
-                Não perca tempo, faça login com sua conta Google e aproveite todos os benefícios da nossa plataforma.
+                Não perca tempo, faça login com sua conta Google e aproveite todos os benefícios da
+                nossa plataforma.
               </p>
             </div>
           </div>
 
           <div>
-            <UButton variant="subtle" color="primary" class="cursor-pointer" block external to="/api/auth/google">
+            <UButton
+              variant="subtle"
+              color="primary"
+              class="cursor-pointer"
+              block
+              external
+              to="/api/auth/google"
+            >
               <Icon name="devicon:google" />
               Entrar com o Google
             </UButton>
