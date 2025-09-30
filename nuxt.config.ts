@@ -1,5 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import tailwindcss from "@tailwindcss/vite";
+import tailwindcss from "@tailwindcss/vite"
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
@@ -11,11 +11,30 @@ export default defineNuxtConfig({
       meta: [
         { name: "description", content: "Agende o banho do seu pet de forma fácil e rápida!" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { name: "keywords", content: "banho, tosa, pet, agendamento, fácil, rápido, online, petshop" },
+        {
+          name: "keywords",
+          content: "banho, tosa, pet, agendamento, fácil, rápido, online, petshop",
+        },
       ],
     },
   },
-  modules: ["@nuxt/image", "@nuxt/ui", "@nuxt/fonts", "@pinia/nuxt", "nuxt-auth-utils"],
+  modules: [
+    "@nuxt/image",
+    "@nuxt/ui",
+    "@nuxt/fonts",
+    "@pinia/nuxt",
+    "nuxt-auth-utils",
+    "@nuxt/eslint",
+  ],
+  eslint: {
+    config: {
+      stylistic: {
+        semi: false,
+        quotes: "double",
+        indent: 2,
+      },
+    },
+  },
   css: ["~/assets/css/main.css"],
   runtimeConfig: {
     oauth: {
@@ -34,4 +53,4 @@ export default defineNuxtConfig({
   vite: {
     plugins: [tailwindcss()],
   },
-});
+})
