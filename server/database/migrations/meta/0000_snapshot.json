@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9eca14ea-ff76-4bf1-b91e-2ab7e2ca1c13",
+  "id": "fde24038-506f-44c6-baf2-d106c4a230c7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "users": {
@@ -28,8 +28,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "image": {
-          "name": "image",
+        "avatar": {
+          "name": "avatar",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

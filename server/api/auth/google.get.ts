@@ -1,21 +1,17 @@
-import { db } from "../../database";
-import { users } from "../../database/schema";
-import { eq } from "drizzle-orm";
+import { db } from "../../database"
+import { users } from "../../database/schema"
+import { eq } from "drizzle-orm"
 
 export default defineOAuthGoogleEventHandler({
   async onSuccess(event, { user }) {
-    const existingUser = await db.select().from(users).where(eq(users.email, user.email)).get();
-    console.log(existingUser);
+    const existingUser = await db.select().from(users).where(eq(users.email, user.email)).get()
 
     if (!existingUser) {
-      await db
-        .insert(users)
-        .values({
-          name: user.name,
-          email: user.email,
-          image: user.picture,
-        })
-        .returning();
+      await db.insert(users).values({
+        name: user.name,
+        email: user.email,
+        avatar: user.picture,
+      })
     }
 
     await setUserSession(event, {
@@ -23,14 +19,14 @@ export default defineOAuthGoogleEventHandler({
         id: user.id,
         email: user.email,
         name: user.name,
-        avatar: user.image,
+        avatar: user.picture,
       },
-    });
+    })
 
-    return sendRedirect(event, "/dashboard");
+    return sendRedirect(event, "/dashboard")
   },
   onError(event, error) {
-    console.error("Google OAuth error:", error);
-    return sendRedirect(event, "/");
+    console.error("Google OAuth error:", error)
+    return sendRedirect(event, "/")
   },
-});
+})

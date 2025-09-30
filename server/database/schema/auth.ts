@@ -1,5 +1,5 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { v7 as uuid } from "uuid";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
+import { v7 as uuid } from "uuid"
 
 export const users = sqliteTable("users", {
   id: text()
@@ -7,11 +7,11 @@ export const users = sqliteTable("users", {
     .$default(() => uuid()),
   name: text().notNull(),
   email: text().notNull().unique(),
-  image: text(),
+  avatar: text(),
   createdAt: integer()
     .notNull()
     .$defaultFn(() => Date.now()),
   updatedAt: integer()
     .notNull()
     .$onUpdateFn(() => Date.now()),
-});
+})
