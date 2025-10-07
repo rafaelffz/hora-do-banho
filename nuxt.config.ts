@@ -26,6 +26,10 @@ export default defineNuxtConfig({
     "nuxt-auth-utils",
     "@nuxt/eslint",
   ],
+  colorMode: {
+    preference: "system",
+    fallback: "light",
+  },
   eslint: {
     config: {
       stylistic: {

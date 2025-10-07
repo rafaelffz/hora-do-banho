@@ -14,11 +14,13 @@ if (loggedIn.value) {
 
     <div class="container mx-auto px-4 relative z-10 flex flex-col items-center h-full">
       <nav
-        class="bg-gray-900/90 border border-gray-600 w-full max-w-3xl rounded-xl p-2 mt-4 flex items-center justify-between"
+        class="bg-gray-200/90 dark:bg-gray-800/90 border border-gray-600 w-full max-w-3xl rounded-xl p-2 mt-4 flex items-center justify-between"
       >
         <Logo />
 
-        <div>
+        <div class="flex items-center gap-2">
+          <UColorModeButton class="cursor-pointer" />
+
           <UButton
             variant="solid"
             class="cursor-pointer w-24 text-white flex items-center justify-center"

@@ -1,9 +1,10 @@
 import { db } from "../../database"
 import { users } from "../../database/schema"
 import { eq } from "drizzle-orm"
+import { H3Event } from "h3"
 
 export default defineOAuthGoogleEventHandler({
-  async onSuccess(event, { user }) {
+  async onSuccess(event: H3Event, { user }: any) {
     const existingUser = await db.select().from(users).where(eq(users.email, user.email)).get()
 
     if (!existingUser) {
@@ -23,9 +24,9 @@ export default defineOAuthGoogleEventHandler({
       },
     })
 
-    return sendRedirect(event, "/dashboard")
+    return sendRedirect(event, "/dashboard/schedulings")
   },
-  onError(event, error) {
+  onError(event: H3Event, error: any) {
     console.error("Google OAuth error:", error)
     return sendRedirect(event, "/")
   },

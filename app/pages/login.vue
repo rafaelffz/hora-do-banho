@@ -13,21 +13,23 @@ if (loggedIn.value) {
     ></div>
 
     <div class="flex flex-col size-full justify-center items-center px-4 gap-8">
-      <div class="w-full max-w-xl rounded-xl bg-gray-100 brightness-90 z-10 p-4 space-y-8">
+      <div
+        class="w-full max-w-xl rounded-xl bg-gray-100 dark:bg-gray-800 brightness-90 z-10 p-4 space-y-8"
+      >
         <div class="flex items-center justify-start w-full">
           <img src="@/assets/images/icon.svg" alt="Logo Hora do Banho" class="size-12" />
         </div>
 
         <div class="p-2 space-y-8">
-          <div class="text-black text-3xl font-bold text-center">
+          <div class="text-gray-800 dark:text-white text-3xl font-bold text-center">
             <div class="space-y-6">
-              <h1 class="text-balance text-2xl md:text-3xl text-gray-800">
+              <h1 class="text-balance text-2xl md:text-3xl">
                 Entre na <span class="text-primary">Hora do Banho</span> e agende os banhos dos pets
                 com facilidade!
               </h1>
-              <p class="mt-2 text-sm md:text-base font-normal text-balance text-gray-600">
-                Não perca tempo, faça login com sua conta Google e aproveite todos os benefícios da
-                nossa plataforma.
+              <p class="mt-2 text-sm md:text-base font-normal text-balance text-muted">
+                Não perca tempo, faça login com sua conta do Google e aproveite todos os benefícios
+                da nossa plataforma.
               </p>
             </div>
           </div>
