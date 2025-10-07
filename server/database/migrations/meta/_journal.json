@@ -8,6 +8,13 @@
       "when": 1759203865250,
       "tag": "0000_big_miracleman",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1759806046097,
+      "tag": "0001_fat_wallflower",
+      "breakpoints": true
     }
   ]
 }
