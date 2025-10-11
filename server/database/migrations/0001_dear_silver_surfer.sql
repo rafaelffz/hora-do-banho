@@ -1,5 +1,8 @@
 CREATE TABLE `clients` (
 	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`email` text,
+	`avatar` text,
 	`user_id` text NOT NULL,
 	`phone` text,
 	`address` text,
@@ -10,15 +13,18 @@ CREATE TABLE `clients` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `clients_email_unique` ON `clients` (`email`);--> statement-breakpoint
 CREATE TABLE `packages` (
 	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
 	`name` text NOT NULL,
 	`description` text,
 	`price` real NOT NULL,
 	`duration` integer NOT NULL,
 	`is_active` integer DEFAULT true NOT NULL,
 	`created_at` integer NOT NULL,
-	`updated_at` integer NOT NULL
+	`updated_at` integer NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `pets` (
@@ -47,7 +53,7 @@ CREATE TABLE `scheduling_pets` (
 CREATE TABLE `schedulings` (
 	`id` text PRIMARY KEY NOT NULL,
 	`client_id` text NOT NULL,
-	`package_id` text NOT NULL,
+	`package_id` text,
 	`scheduling_date` integer NOT NULL,
 	`status` text DEFAULT 'scheduled' NOT NULL,
 	`total_price` real NOT NULL,

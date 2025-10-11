@@ -74,17 +74,19 @@ watch(
       </template>
     </UDashboardNavbar>
 
-    <slot />
+    <div class="container mx-auto p-6 mb-24 font-Inter">
+      <slot />
+    </div>
 
     <div
-      class="flex items-center gap-1 px-1 py-1 rounded-full bg-pink-400/70 w-fit absolute left-1/2 -translate-x-1/2 bottom-1/12"
+      class="flex items-center justify-center gap-1 px-1 py-1 rounded-full bg-pink-400/95 w-fit fixed left-1/2 -translate-x-1/2 bottom-[5%]"
     >
       <NuxtLink
         v-for="item in menuItems"
         :key="item.title"
         :to="item.route"
-        class="cursor-pointer text-gray-800 dark:text-white dark:hover:text-gray-300 hover:text-gray-600 px-6 py-2 transition-all duration-200"
-        :class="{ 'bg-pink-400 !text-pink-800 rounded-full': item.active }"
+        class="cursor-pointer text-white hover:text-gray-300 px-6 py-2 transition-all duration-200"
+        :class="{ 'bg-pink-300/80 !text-pink-800 rounded-full': item.active }"
       >
         <UTooltip :text="item.title" :delay-duration="200">
           <Icon :name="item.icon" size="24" />

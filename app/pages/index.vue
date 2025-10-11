@@ -2,7 +2,7 @@
 const { loggedIn } = useUserSession()
 
 if (loggedIn.value) {
-  navigateTo("/dashboard")
+  navigateTo("/dashboard/schedulings")
 }
 </script>
 

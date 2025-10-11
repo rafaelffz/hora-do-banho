@@ -17,9 +17,7 @@ export const schedulings = sqliteTable("schedulings", {
   clientId: text()
     .notNull()
     .references(() => clients.id, { onDelete: "cascade" }),
-  packageId: text()
-    .notNull()
-    .references(() => packages.id, { onDelete: "restrict" }),
+  packageId: text().references(() => packages.id, { onDelete: "restrict" }),
   schedulingDate: integer().notNull(),
   status: text({ enum: schedulingStatusEnum }).notNull().default("scheduled"),
   totalPrice: real().notNull(),

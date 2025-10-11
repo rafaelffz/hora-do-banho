@@ -12,7 +12,7 @@ if (loggedIn.value) {
       class="bg-[url('@/assets/images/bg-login.jpg')] h-dvh w-full bg-contain brightness-[30%] absolute"
     ></div>
 
-    <div class="flex flex-col size-full justify-center items-center px-4 gap-8">
+    <div class="flex flex-col size-full justify-center items-center px-5 gap-8">
       <div
         class="w-full max-w-xl rounded-xl bg-gray-100 dark:bg-gray-800 brightness-90 z-10 p-4 space-y-8"
       >
