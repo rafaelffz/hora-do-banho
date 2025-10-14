@@ -1,8 +1,7 @@
 <script lang="ts" setup>
 import type { FormSubmitEvent } from "@nuxt/ui"
 import z4, { ZodError } from "zod/v4"
-import { vMaska } from "maska/vue"
-import { insertClientSchema, type InsertClient } from "~~/server/database/schema"
+import { insertPackageSchema, type InsertPackage } from "~~/server/database/schema"
 
 definePageMeta({
   middleware: "auth",
@@ -10,37 +9,37 @@ definePageMeta({
 })
 
 useHead({
-  titleTemplate: "%s • Cadastrar Cliente",
+  titleTemplate: "%s • Adicionar Pacote",
 })
 
 const toast = useToast()
+const { durationOptions } = usePackages()
 
-const state = reactive<Partial<InsertClient>>({
+const state = reactive<Partial<InsertPackage>>({
   name: "",
-  email: "",
-  phone: "",
-  address: "",
-  notes: "",
+  description: "",
+  price: 0,
+  duration: 60,
 })
 
 const isLoading = ref(false)
 
-async function onSubmit(event: FormSubmitEvent<InsertClient>) {
+async function onSubmit(event: FormSubmitEvent<InsertPackage>) {
   isLoading.value = true
 
   try {
-    await $fetch("/api/clients", {
+    await $fetch("/api/packages", {
       method: "POST",
       body: event.data,
     })
 
     toast.add({
-      title: "Cliente cadastrado com sucesso!",
-      description: `${event.data.name} foi adicionado à sua lista de clientes.`,
+      title: "Pacote criado com sucesso!",
+      description: `${event.data.name} foi adicionado à sua lista de pacotes.`,
       color: "success",
     })
 
-    await navigateTo("/dashboard/clients")
+    await navigateTo("/dashboard/packages")
   } catch (error: any) {
     if (error instanceof ZodError && error.issues) {
       const issues = error.issues
@@ -51,8 +50,8 @@ async function onSubmit(event: FormSubmitEvent<InsertClient>) {
       })
     } else {
       toast.add({
-        title: "Erro ao cadastrar cliente",
-        description: "Tente novamente em alguns instantes.",
+        title: "Erro interno",
+        description: "Não foi possível criar o pacote. Tente novamente.",
         color: "error",
       })
     }
@@ -60,81 +59,82 @@ async function onSubmit(event: FormSubmitEvent<InsertClient>) {
     isLoading.value = false
   }
 }
+
+watch(
+  () => state.price,
+  newPrice => {
+    if (newPrice === undefined) {
+      state.price = 0
+    }
+  }
+)
 </script>
 
 <template>
   <div class="size-full flex flex-col gap-6">
     <div class="flex flex-col items-start gap-6">
-      <UButton to="/dashboard/clients" variant="ghost" icon="i-tabler-arrow-left" label="Voltar" />
+      <UButton to="/dashboard/packages" variant="ghost" icon="i-tabler-arrow-left" label="Voltar" />
 
       <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
-        <Icon name="i-tabler-user-plus" size="24" />
-        Adicionar Cliente
+        <Icon name="i-tabler-package" size="24" />
+        Adicionar Pacote
       </h1>
     </div>
 
     <div class="size-full">
       <UCard class="w-full">
-        <UForm :schema="insertClientSchema" :state="state" class="space-y-5" @submit="onSubmit">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <UForm :schema="insertPackageSchema" :state="state" class="space-y-5" @submit="onSubmit">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
             <UFormField label="Nome" name="name" required>
               <UInput
                 class="w-full"
                 variant="subtle"
                 size="xl"
                 v-model="state.name"
-                placeholder="Digite o nome completo"
-                icon="i-tabler-user"
+                placeholder="Digite o nome do pacote"
+                icon="i-tabler-package"
                 :disabled="isLoading"
               />
             </UFormField>
 
-            <UFormField label="Telefone" name="phone">
-              <UInput
+            <UFormField label="Duração" name="duration" required>
+              <UInputMenu
                 class="w-full"
                 variant="subtle"
                 size="xl"
-                v-model="state.phone"
-                v-maska="'(##) #####-####'"
-                placeholder="(11) 99999-9999"
-                icon="i-tabler-phone"
+                value-key="value"
+                v-model="state.duration"
+                placeholder="Digite a duração do pacote"
+                :items="durationOptions"
+                icon="i-tabler-clock"
                 :disabled="isLoading"
               />
             </UFormField>
 
-            <UFormField label="Email" name="email">
-              <UInput
+            <UFormField label="Preço" name="price" required>
+              <UInputNumber
+                v-model="state.price"
+                size="xl"
                 class="w-full"
                 variant="subtle"
-                size="xl"
-                v-model="state.email"
-                type="email"
-                placeholder="exemplo@email.com"
-                icon="i-tabler-mail"
-                :disabled="isLoading"
+                locale="pt-BR"
+                :step-snapping="false"
+                :format-options="{
+                  style: 'currency',
+                  currency: 'BRL',
+                  currencySign: 'accounting',
+                }"
               />
             </UFormField>
 
-            <UFormField label="Endereço" name="address" required>
-              <UInput
-                class="w-full"
-                variant="subtle"
-                size="xl"
-                v-model="state.address"
-                placeholder="Rua, número, bairro, cidade"
-                icon="i-tabler-map-pin"
-                :disabled="isLoading"
-              />
-            </UFormField>
-
-            <UFormField label="Observações" name="notes" class="md:col-span-2">
+            <UFormField label="Descrição" name="description" class="md:col-span-3">
               <UTextarea
                 class="w-full"
                 variant="subtle"
                 size="xl"
-                v-model="state.notes"
-                placeholder="Informações adicionais sobre o cliente"
-                :rows="5"
+                v-model="state.description"
+                placeholder="Descrição do pacote (detalhes do que está incluso, etc)."
+                :rows="3"
                 :maxlength="500"
                 :disabled="isLoading"
               />
@@ -148,14 +148,14 @@ async function onSubmit(event: FormSubmitEvent<InsertClient>) {
               label="Cancelar"
               class="cursor-pointer"
               :disabled="isLoading"
-              @click="navigateTo('/dashboard/clients')"
+              @click="navigateTo('/dashboard/packages')"
             />
 
             <UButton
               type="submit"
               icon="i-tabler-check"
               class="text-white cursor-pointer"
-              label="Adicionar Cliente"
+              label="Adicionar Pacote"
               :loading="isLoading"
             />
           </div>

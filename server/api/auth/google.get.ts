@@ -29,9 +29,6 @@ export default defineOAuthGoogleEventHandler({
       },
     })
 
-    const session = await getUserSession(event)
-    console.log(session)
-
     return sendRedirect(event, "/dashboard/schedulings")
   },
   onError(event: H3Event, error: any) {

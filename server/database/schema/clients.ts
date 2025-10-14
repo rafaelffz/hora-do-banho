@@ -26,26 +26,6 @@ export const clients = sqliteTable("clients", {
     .$onUpdateFn(() => Date.now()),
 })
 
-export const packages = sqliteTable("packages", {
-  id: text()
-    .primaryKey()
-    .$default(() => uuid()),
-  userId: text()
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  name: text().notNull(),
-  description: text(),
-  price: real().notNull(),
-  duration: integer().notNull(),
-  isActive: integer({ mode: "boolean" }).notNull().default(true),
-  createdAt: integer()
-    .notNull()
-    .$defaultFn(() => Date.now()),
-  updatedAt: integer()
-    .notNull()
-    .$onUpdateFn(() => Date.now()),
-})
-
 export type SelectClient = typeof clients.$inferSelect
 
 export const insertClientSchema = createInsertSchema(clients, {

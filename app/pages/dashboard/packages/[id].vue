@@ -1,8 +1,7 @@
 <script lang="ts" setup>
 import type { FormSubmitEvent } from "@nuxt/ui"
 import { ZodError } from "zod/v4"
-import { vMaska } from "maska/vue"
-import { updateClientSchema, type UpdateClient } from "~~/server/database/schema"
+import { updatePackageSchema, type UpdatePackage } from "~~/server/database/schema"
 
 definePageMeta({
   middleware: "auth",
@@ -10,36 +9,37 @@ definePageMeta({
 })
 
 useHead({
-  titleTemplate: "%s • Cliente",
+  titleTemplate: "%s • Pacote",
 })
 
 const route = useRoute()
 const toast = useToast()
+const { durationOptions } = usePackages()
 
-const { data: client } = await useFetch(`/api/clients/${route.params.id}`, {
-  key: `client-${route.params.id}`,
+const { data: package_ } = await useFetch(`/api/packages/${route.params.id}`, {
+  key: `package-${route.params.id}`,
 })
 
 const isLoading = ref(false)
 const isEditing = ref(false)
 
-async function onSubmit(event: FormSubmitEvent<UpdateClient>) {
+async function onSubmit(event: FormSubmitEvent<UpdatePackage>) {
   isLoading.value = true
 
   try {
-    await $fetch(`/api/clients/${route.params.id}`, {
+    await $fetch(`/api/packages/${route.params.id}`, {
       method: "PATCH",
       body: { ...event.data, id: route.params.id },
     })
 
     toast.add({
-      title: "Cliente atualizado com sucesso!",
+      title: "Pacote atualizado com sucesso!",
       description: `${event.data.name} foi atualizado.`,
       color: "success",
     })
 
     isEditing.value = false
-    await navigateTo("/dashboard/clients")
+    await navigateTo("/dashboard/packages")
   } catch (error: any) {
     if (error instanceof ZodError && error.issues) {
       const issues = error.issues
@@ -50,7 +50,7 @@ async function onSubmit(event: FormSubmitEvent<UpdateClient>) {
       })
     } else {
       toast.add({
-        title: "Erro ao atualizar cliente",
+        title: "Erro ao atualizar pacote",
         description: "Tente novamente em alguns instantes.",
         color: "error",
       })
@@ -66,15 +66,15 @@ async function onSubmit(event: FormSubmitEvent<UpdateClient>) {
     <div class="flex justify-between items-end">
       <div class="flex flex-col items-start gap-6">
         <UButton
-          to="/dashboard/clients"
+          to="/dashboard/packages"
           variant="ghost"
           icon="i-tabler-arrow-left"
           label="Voltar"
         />
 
         <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
-          <Icon name="i-tabler-user" size="24" />
-          Detalhes do Cliente
+          <Icon name="i-tabler-package" size="24" />
+          Detalhes do Pacote
         </h1>
       </div>
 
@@ -92,67 +92,60 @@ async function onSubmit(event: FormSubmitEvent<UpdateClient>) {
     </div>
 
     <div class="size-full">
-      <UCard class="w-full" v-if="client">
-        <UForm :schema="updateClientSchema" :state="client" class="space-y-5" @submit="onSubmit">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <UCard class="w-full" v-if="package_">
+        <UForm :schema="updatePackageSchema" :state="package_" class="space-y-5" @submit="onSubmit">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
             <UFormField label="Nome" name="name" required>
               <UInput
                 class="w-full"
                 variant="subtle"
                 size="xl"
-                v-model="client.name"
-                placeholder="Digite o nome completo"
-                icon="i-tabler-user"
+                v-model="package_.name"
+                placeholder="Digite o nome do pacote"
+                icon="i-tabler-package"
                 :disabled="isLoading || !isEditing"
               />
             </UFormField>
 
-            <UFormField label="Telefone" name="phone">
-              <UInput
+            <UFormField label="Duração" name="duration" required>
+              <UInputMenu
                 class="w-full"
                 variant="subtle"
                 size="xl"
-                v-model="client.phone"
-                v-maska="'(##) #####-####'"
-                placeholder="(11) 99999-9999"
-                icon="i-tabler-phone"
+                value-key="value"
+                v-model="package_.duration"
+                placeholder="Digite a duração do pacote"
+                :items="durationOptions"
+                icon="i-tabler-clock"
                 :disabled="isLoading || !isEditing"
               />
             </UFormField>
 
-            <UFormField label="Email" name="email">
-              <UInput
+            <UFormField label="Preço" name="price" required>
+              <UInputNumber
+                v-model="package_.price"
+                size="xl"
                 class="w-full"
                 variant="subtle"
-                size="xl"
-                v-model="client.email"
-                type="email"
-                placeholder="exemplo@email.com"
-                icon="i-tabler-mail"
+                locale="pt-BR"
+                :step-snapping="false"
+                :format-options="{
+                  style: 'currency',
+                  currency: 'BRL',
+                  currencySign: 'accounting',
+                }"
                 :disabled="isLoading || !isEditing"
               />
             </UFormField>
 
-            <UFormField label="Endereço" name="address" required>
-              <UInput
-                class="w-full"
-                variant="subtle"
-                size="xl"
-                v-model="client.address"
-                placeholder="Rua, número, bairro, cidade"
-                icon="i-tabler-map-pin"
-                :disabled="isLoading || !isEditing"
-              />
-            </UFormField>
-
-            <UFormField label="Observações" name="notes" class="md:col-span-2">
+            <UFormField label="Descrição" name="description" class="md:col-span-3">
               <UTextarea
                 class="w-full"
                 variant="subtle"
                 size="xl"
-                v-model="client.notes"
-                placeholder="Informações adicionais sobre o cliente"
-                :rows="5"
+                v-model="package_.description"
+                placeholder="Descrição do pacote (detalhes do que está incluso, etc)."
+                :rows="3"
                 :maxlength="500"
                 :disabled="isLoading || !isEditing"
               />
@@ -173,7 +166,7 @@ async function onSubmit(event: FormSubmitEvent<UpdateClient>) {
               type="submit"
               icon="i-tabler-check"
               class="text-white cursor-pointer"
-              label="Salvar Cliente"
+              label="Salvar Pacote"
               :loading="isLoading"
             />
           </div>

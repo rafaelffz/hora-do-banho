@@ -27,8 +27,6 @@ const openToggleActiveDialog = (client: SelectClient) => {
   }"?`
 
   confirmDialogState.onConfirm = async () => {
-    console.log(`Toggling active status for client ${client.id}`)
-
     await $fetch(`/api/clients/${client.id}`, {
       method: "PATCH",
       body: { isActive: !client.isActive },
@@ -60,7 +58,7 @@ const openDeleteDialog = (client: SelectClient) => {
 const dropdownMenuClientItems = (client: SelectClient) => [
   {
     label: "Ativar/Desativar",
-    icon: "i-tabler-user-check",
+    icon: "i-tabler-toggle-left",
     onSelect: () => openToggleActiveDialog(client),
   },
   {
@@ -74,7 +72,7 @@ const dropdownMenuClientItems = (client: SelectClient) => [
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
+  <div class="size-full flex flex-col gap-6">
     <div class="flex items-center justify-between">
       <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
         <Icon name="i-tabler-users" size="24" />
@@ -123,7 +121,7 @@ const dropdownMenuClientItems = (client: SelectClient) => [
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" v-if="isLoading">
-      <USkeleton class="h-32 w-full" v-for="n in 4" />
+      <USkeleton class="h-32 w-full" v-for="n in 5" />
     </div>
 
     <div
@@ -181,12 +179,19 @@ const dropdownMenuClientItems = (client: SelectClient) => [
       </UCard>
     </div>
 
-    <div v-if="!isLoading && !error && clients.length === 0" class="text-center py-32 text-muted">
-      <Icon name="i-tabler-users-plus" size="48" class="mx-auto mb-2" />
-      <p>Nenhum cliente cadastrado ainda.</p>
-      <UButton variant="subtle" class="mt-4" to="/dashboard/clients/new">
-        Cadastrar primeiro cliente
-      </UButton>
+    <div
+      v-else-if="!error && !isLoading && clients.length === 0"
+      class="flex flex-col items-center justify-center text-gray-400 size-full"
+    >
+      <Icon name="i-tabler-user-off" size="48" />
+
+      <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+        Nenhum cliente encontrado
+      </h3>
+
+      <p class="text-gray-600 dark:text-gray-400 mb-2">Crie seu primeiro cliente para começar.</p>
+
+      <UButton to="/dashboard/clients/new" icon="i-tabler-plus"> Criar primeiro cliente </UButton>
     </div>
 
     <ConfirmDialog

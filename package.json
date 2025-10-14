@@ -25,6 +25,7 @@
     "nuxt-auth-utils": "^0.5.25",
     "tailwindcss": "^4.1.13",
     "uuid": "^13.0.0",
+    "v-money": "^0.8.1",
     "vue": "^3.5.21",
     "vue-router": "^4.5.1",
     "zod": "^4.1.9"

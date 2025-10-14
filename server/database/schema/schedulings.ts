@@ -1,6 +1,7 @@
 import { integer, sqliteTable, text, real } from "drizzle-orm/sqlite-core"
 import { v7 as uuid } from "uuid"
-import { clients, packages } from "./clients"
+import { clients } from "./clients"
+import { packages } from "./packages"
 
 export const schedulingStatusEnum = [
   "scheduled",

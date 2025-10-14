@@ -3,7 +3,7 @@ const props = defineProps<{
   title: string
   icon?: string
   subtitle?: string
-  statistics: number
+  statistics: string | number
 }>()
 </script>
 
