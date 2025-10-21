@@ -43,7 +43,7 @@ if (loggedIn.value) {
               external
               to="/api/auth/google"
             >
-              <Icon name="devicon:google" />
+              <Icon name="i-tabler:brand-google-filled" />
               Entrar com o Google
             </UButton>
           </div>

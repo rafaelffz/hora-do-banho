@@ -84,7 +84,7 @@ const dropdownMenuPackageItems = (package_: SelectPackage) => [
         to="/dashboard/packages/new"
         icon="i-tabler-plus"
         class="cursor-pointer text-white"
-        v-if="packages.length > 0"
+        v-if="packages?.length > 0"
       >
         Adicionar Pacote
       </UButton>
@@ -115,13 +115,13 @@ const dropdownMenuPackageItems = (package_: SelectPackage) => [
     </UAlert>
 
     <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-5">
-      <StatisticCard title="Total" :statistics="statistics.total" icon="i-tabler-users" />
-      <StatisticCard title="Ativos" :statistics="statistics.active" icon="i-tabler-user-check" />
-      <StatisticCard title="Inativos" :statistics="statistics.inactive" icon="i-tabler-user-x" />
+      <StatisticCard title="Total" :statistics="statistics.total" icon="i-tabler-packages" />
+      <StatisticCard title="Ativos" :statistics="statistics.active" icon="i-tabler-box" />
+      <StatisticCard title="Inativos" :statistics="statistics.inactive" icon="i-tabler-box-off" />
       <StatisticCard
         title="Preço Médio"
         :statistics="`R$ ${statistics.averagePrice}`"
-        icon="i-tabler-user-x"
+        icon="i-tabler-coin"
       />
     </div>
 

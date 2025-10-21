@@ -1,8 +1,17 @@
 <script lang="ts" setup>
 import type { FormSubmitEvent } from "@nuxt/ui"
-import z4, { ZodError } from "zod/v4"
+import { ZodError } from "zod/v4"
 import { vMaska } from "maska/vue"
-import { insertClientSchema, type InsertClient } from "~~/server/database/schema"
+import {
+  insertClientSchema,
+  insertClientWithPetsSchema,
+  insertPetSchema,
+  petSizes,
+  type InsertClient,
+  type InsertClientWithPets,
+  type InsertPet,
+} from "~~/server/database/schema"
+import { type BreedsResponse } from "../../../../shared/types/breeds"
 
 definePageMeta({
   middleware: "auth",
@@ -14,18 +23,29 @@ useHead({
 })
 
 const toast = useToast()
+const { breeds } = usePets()
 
-const state = reactive<Partial<InsertClient>>({
+const state = reactive<Partial<InsertClientWithPets>>({
   name: "",
   email: "",
   phone: "",
   address: "",
   notes: "",
+  pets: [],
+})
+
+const petState = reactive<Partial<InsertPet>>({
+  name: "",
+  size: "small",
+  breed: "",
+  weight: null,
+  notes: "",
 })
 
 const isLoading = ref(false)
+const isNewPetDialogOpen = ref(false)
 
-async function onSubmit(event: FormSubmitEvent<InsertClient>) {
+async function onSubmit(event: FormSubmitEvent<InsertClientWithPets>) {
   isLoading.value = true
 
   try {
@@ -60,22 +80,57 @@ async function onSubmit(event: FormSubmitEvent<InsertClient>) {
     isLoading.value = false
   }
 }
+
+const openNewPetDialog = () => {
+  isNewPetDialogOpen.value = true
+}
+
+async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
+  isLoading.value = true
+  state.pets = [...(state.pets || []), event.data]
+  isLoading.value = false
+
+  isNewPetDialogOpen.value = false
+
+  toast.add({
+    title: "Pet cadastrado com sucesso!",
+    description: `${event.data.name} foi adicionado à lista de pets do cliente.`,
+    color: "success",
+  })
+}
 </script>
 
 <template>
   <div class="size-full flex flex-col gap-6">
-    <div class="flex flex-col items-start gap-6">
-      <UButton to="/dashboard/clients" variant="ghost" icon="i-tabler-arrow-left" label="Voltar" />
+    <div class="flex justify-between items-end">
+      <div class="flex flex-col items-start gap-6">
+        <UButton
+          to="/dashboard/clients"
+          variant="ghost"
+          icon="i-tabler-arrow-left"
+          label="Voltar"
+        />
 
-      <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
-        <Icon name="i-tabler-user-plus" size="24" />
-        Adicionar Cliente
-      </h1>
+        <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
+          <Icon name="i-tabler-user-plus" size="24" />
+          Adicionar Cliente
+        </h1>
+      </div>
+
+      <UButton variant="subtle" color="secondary" class="cursor-pointer" @click="openNewPetDialog">
+        <Icon name="i-tabler-paw" size="20" />
+        Adicionar Pet
+      </UButton>
     </div>
 
     <div class="size-full">
       <UCard class="w-full">
-        <UForm :schema="insertClientSchema" :state="state" class="space-y-5" @submit="onSubmit">
+        <UForm
+          :schema="insertClientWithPetsSchema"
+          :state="state"
+          class="space-y-5"
+          @submit="onSubmit"
+        >
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <UFormField label="Nome" name="name" required>
               <UInput
@@ -141,6 +196,30 @@ async function onSubmit(event: FormSubmitEvent<InsertClient>) {
             </UFormField>
           </div>
 
+          <div>
+            <h2 class="text-lg font-semibold mb-3">Pets Cadastrados</h2>
+
+            <div v-if="state.pets && state.pets.length > 0" class="space-y-3 flex gap-6 flex-wrap">
+              <div
+                v-for="(pet, index) in state.pets"
+                :key="index"
+                class="p-4 border border-gray-200 border-t-4 border-t-primary rounded-lg w-full max-w-2xs text-wrap overflow-auto"
+              >
+                <h3 class="text-md font-medium">
+                  {{ pet.name }}
+                </h3>
+                <p v-if="pet.breed" class="text-sm text-muted">Raça: {{ pet.breed }}</p>
+                <p v-if="pet.size" class="text-sm text-muted">
+                  Tamanho: {{ petSizes.find(size => size.value === pet.size)?.label || pet.size }}
+                </p>
+                <p v-if="pet.weight" class="text-sm text-muted">Peso: {{ pet.weight }} kg</p>
+                <p v-if="pet.notes" class="text-sm text-muted">Observações: {{ pet.notes }}</p>
+              </div>
+            </div>
+
+            <p v-else class="text-sm text-gray-500">Nenhum pet cadastrado ainda.</p>
+          </div>
+
           <div class="flex justify-end gap-3 pt-4">
             <UButton
               type="button"
@@ -162,5 +241,104 @@ async function onSubmit(event: FormSubmitEvent<InsertClient>) {
         </UForm>
       </UCard>
     </div>
+
+    <UModal
+      title="Adicionar Pet"
+      v-model:open="isNewPetDialogOpen"
+      :ui="{ footer: 'justify-end' }"
+      class="max-w-2xl"
+    >
+      <template #body>
+        <UForm
+          :schema="insertPetSchema"
+          :state="petState"
+          class="space-y-5"
+          @submit="onSubmitPetForm"
+        >
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <UFormField label="Nome" name="name" required>
+              <UInput
+                class="w-full"
+                variant="subtle"
+                size="xl"
+                v-model="petState.name"
+                placeholder="Digite o nome completo"
+                :disabled="isLoading"
+              />
+            </UFormField>
+
+            <UFormField label="Tamanho" name="size" required>
+              <USelectMenu
+                class="w-full"
+                variant="subtle"
+                size="xl"
+                v-model="petState.size"
+                value-key="value"
+                :items="petSizes"
+                placeholder="Selecione o tamanho"
+                :disabled="isLoading"
+              />
+            </UFormField>
+
+            <UFormField label="Raça" name="breed">
+              <UInputMenu
+                class="w-full"
+                variant="subtle"
+                size="xl"
+                v-model="petState.breed"
+                value-key="label"
+                placeholder="Selecione a raça"
+                :items="breeds?.map(breed => ({ label: breed.name, value: breed.id })) || []"
+                :disabled="isLoading"
+              />
+            </UFormField>
+
+            <UFormField label="Peso (em kg)" name="weight">
+              <UInput
+                class="w-full"
+                variant="subtle"
+                size="xl"
+                v-model="petState.weight"
+                placeholder="Digite o peso"
+                :disabled="isLoading"
+                type="number"
+              />
+            </UFormField>
+
+            <UFormField label="Observações" name="notes" class="md:col-span-2">
+              <UTextarea
+                class="w-full"
+                variant="subtle"
+                size="xl"
+                v-model="petState.notes"
+                placeholder="Informações adicionais sobre o pet"
+                :rows="5"
+                :maxlength="500"
+                :disabled="isLoading"
+              />
+            </UFormField>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4">
+            <UButton
+              type="button"
+              variant="ghost"
+              label="Cancelar"
+              class="cursor-pointer"
+              :disabled="isLoading"
+              @click="navigateTo('/dashboard/clients')"
+            />
+
+            <UButton
+              type="submit"
+              label="Confirmar"
+              icon="i-tabler-check"
+              :loading="isLoading"
+              class="text-white cursor-pointer"
+            />
+          </div>
+        </UForm>
+      </template>
+    </UModal>
   </div>
 </template>

@@ -28,7 +28,7 @@ const openToggleActiveDialog = (client: SelectClient) => {
 
   confirmDialogState.onConfirm = async () => {
     await $fetch(`/api/clients/${client.id}`, {
-      method: "PATCH",
+      method: "PUT",
       body: { isActive: !client.isActive },
     })
 
@@ -79,7 +79,12 @@ const dropdownMenuClientItems = (client: SelectClient) => [
         Clientes
       </h1>
 
-      <UButton to="/dashboard/clients/new" icon="i-tabler-plus" class="cursor-pointer text-white">
+      <UButton
+        to="/dashboard/clients/new"
+        icon="i-tabler-plus"
+        class="cursor-pointer text-white"
+        v-if="clients?.length > 0"
+      >
         Adicionar Cliente
       </UButton>
     </div>

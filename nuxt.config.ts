@@ -49,9 +49,10 @@ export default defineNuxtConfig({
     },
     tursoAuthToken: process.env.TURSO_AUTH_TOKEN,
     googleClientSecret: process.env.NUXT_OAUTH_GOOGLE_CLIENT_SECRET,
+    tursoDatabaseUrl: process.env.TURSO_DATABASE_URL,
+    googleClientId: process.env.NUXT_OAUTH_GOOGLE_CLIENT_ID,
     public: {
-      tursoDatabaseUrl: process.env.TURSO_DATABASE_URL,
-      googleClientId: process.env.NUXT_OAUTH_GOOGLE_CLIENT_ID,
+      dogApiKey: process.env.DOG_API_KEY,
     },
   },
   vite: {

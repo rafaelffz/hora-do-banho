@@ -22,7 +22,7 @@ export default defineOAuthGoogleEventHandler({
 
     await setUserSession(event, {
       user: {
-        id: existingUser.id,
+        id: existingUser?.id,
         email: user.email,
         name: user.name,
         avatar: user.picture,

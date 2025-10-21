@@ -1,8 +1,10 @@
-import { integer, sqliteTable, text, real } from "drizzle-orm/sqlite-core"
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
 import { v7 as uuid } from "uuid"
 import { users } from "./auth"
 import { createInsertSchema } from "drizzle-zod"
 import z4 from "zod/v4"
+import { insertPetSchema, pets, updatePetSchema } from "./pets"
+import { relations } from "drizzle-orm"
 
 export const clients = sqliteTable("clients", {
   id: text()
@@ -26,6 +28,10 @@ export const clients = sqliteTable("clients", {
     .$onUpdateFn(() => Date.now()),
 })
 
+export const clientsRelations = relations(clients, ({ many }) => ({
+  pets: many(pets),
+}))
+
 export type SelectClient = typeof clients.$inferSelect
 
 export const insertClientSchema = createInsertSchema(clients, {
@@ -47,10 +53,21 @@ export const insertClientSchema = createInsertSchema(clients, {
   id: true,
 })
 
+export const insertClientWithPetsSchema = insertClientSchema.extend({
+  pets: z4.array(insertPetSchema).optional().or(z4.null()),
+})
+
+export type InsertClientWithPets = z4.infer<typeof insertClientWithPetsSchema>
+
 export type InsertClient = z4.infer<typeof insertClientSchema>
 
 export const updateClientSchema = insertClientSchema.partial().extend({
   isActive: z4.boolean(),
 })
 
+export const updateClientWithPetsSchema = updateClientSchema.extend({
+  pets: z4.array(updatePetSchema).optional().or(z4.null()),
+})
+
 export type UpdateClient = z4.infer<typeof updateClientSchema>
+export type UpdateClientWithPets = z4.infer<typeof updateClientWithPetsSchema>

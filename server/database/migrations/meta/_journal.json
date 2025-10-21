@@ -15,6 +15,13 @@
       "when": 1759976193476,
       "tag": "0001_dear_silver_surfer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1761003838927,
+      "tag": "0002_opposite_medusa",
+      "breakpoints": true
     }
   ]
 }
