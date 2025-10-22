@@ -75,23 +75,23 @@ watch(
     </UDashboardNavbar>
 
     <div
-      class="container mx-auto p-6 font-Inter w-full mt-16 h-[calc(100vh-4rem)] flex flex-col overflow-y-auto pb-20"
+      class="container mx-auto p-6 font-Inter w-full mt-16 h-[calc(100vh-8.5rem)] flex flex-col overflow-y-auto"
     >
       <slot />
     </div>
 
     <div
-      class="flex items-center justify-center gap-1 px-1 py-1 rounded-full bg-pink-400/95 w-fit fixed left-1/2 -translate-x-1/2 bottom-[2%]"
+      class="flex items-center justify-around h-16 bg-pink-400/95 w-full fixed left-1/2 -translate-x-1/2 bottom-0 px-4 border-t border-pink-300"
     >
       <NuxtLink
         v-for="item in menuItems"
         :key="item.title"
         :to="item.route"
-        class="cursor-pointer text-white hover:text-gray-300 px-6 py-2 transition-all duration-200"
-        :class="{ 'bg-pink-300/80 !text-pink-800 rounded-full': item.active }"
+        class="flex items-center cursor-pointer text-white hover:text-gray-300 px-12 py-2 transition-all duration-200"
+        :class="{ 'bg-pink-300/80 text-pink-800! rounded-lg': item.active }"
       >
         <UTooltip :text="item.title" :delay-duration="200">
-          <Icon :name="item.icon" size="24" />
+          <Icon :name="item.icon" size="28" />
         </UTooltip>
       </NuxtLink>
     </div>
