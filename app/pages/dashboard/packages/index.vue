@@ -165,6 +165,11 @@ const dropdownMenuPackageItems = (package_: SelectPackage) => [
                 <Icon name="i-tabler-clock" size="16" />
                 <span>{{ formatDuration(package_.duration) }}</span>
               </div>
+
+              <div class="flex items-center gap-1">
+                <Icon name="i-tabler-calendar-repeat" size="16" />
+                <span>{{ package_.recurrence }} dias</span>
+              </div>
             </div>
           </div>
 

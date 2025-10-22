@@ -15,6 +15,7 @@ export const packages = sqliteTable("packages", {
   description: text(),
   price: real().notNull(),
   duration: integer().notNull(),
+  recurrence: integer().notNull().notNull().default(7),
   isActive: integer({ mode: "boolean" }).notNull().default(true),
   createdAt: integer()
     .notNull()
@@ -31,6 +32,7 @@ export const insertPackageSchema = createInsertSchema(packages, {
   description: z4.string().optional().or(z4.literal("")).or(z4.null()),
   price: z4.number().min(0, "Preço deve ser maior que zero"),
   duration: z4.number().min(1, "Duração deve ser maior que zero"),
+  recurrence: z4.number().min(1, "Recorrência deve ser maior que zero"),
 }).omit({
   createdAt: true,
   updatedAt: true,

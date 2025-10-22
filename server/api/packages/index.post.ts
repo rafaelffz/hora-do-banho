@@ -20,8 +20,17 @@ export default defineAuthenticatedEventHandler(async event => {
         description: result.data.description || null,
         price: result.data.price,
         duration: result.data.duration,
+        recurrence: result.data.recurrence,
       })
-      .returning()
+      .returning({
+        id: packages.id,
+        userId: packages.userId,
+        name: packages.name,
+        description: packages.description,
+        price: packages.price,
+        duration: packages.duration,
+        recurrence: packages.recurrence,
+      })
 
     return package_
   } catch (error) {

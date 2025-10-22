@@ -20,6 +20,7 @@ const state = reactive<Partial<InsertPackage>>({
   description: "",
   price: 0,
   duration: 60,
+  recurrence: 7,
 })
 
 const isLoading = ref(false)
@@ -91,7 +92,7 @@ watch(
                 variant="subtle"
                 size="xl"
                 v-model="state.name"
-                placeholder="Digite o nome do pacote"
+                placeholder="Ex: Banho + Tosa Completa"
                 icon="i-tabler-package"
                 :disabled="isLoading"
               />
@@ -107,6 +108,19 @@ watch(
                 placeholder="Digite a duração do pacote"
                 :items="durationOptions"
                 icon="i-tabler-clock"
+                :disabled="isLoading"
+              />
+            </UFormField>
+
+            <UFormField label="Recorrência (em dias)" name="recurrence" required>
+              <UInput
+                class="w-full"
+                variant="subtle"
+                size="xl"
+                value-key="value"
+                v-model.number="state.recurrence"
+                placeholder="Ex: 1, 7, 14, 30"
+                icon="i-tabler-calendar-repeat"
                 :disabled="isLoading"
               />
             </UFormField>
