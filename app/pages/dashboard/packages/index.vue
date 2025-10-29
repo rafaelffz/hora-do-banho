@@ -10,8 +10,7 @@ useHead({
   titleTemplate: "%s • Pacotes",
 })
 
-const { packages, isLoading, error, refreshPackages, formatDuration, formatPrice, statistics } =
-  usePackages()
+const { packages, isLoading, error, refreshPackages, statistics } = usePackages()
 
 const isConfirmDialogOpen = ref(false)
 const confirmDialogState = reactive({
@@ -114,15 +113,15 @@ const dropdownMenuPackageItems = (package_: SelectPackage) => [
       </template>
     </UAlert>
 
-    <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-5">
-      <StatisticCard title="Total" :statistics="statistics.total" icon="i-tabler-packages" />
+    <div v-else class="grid grid-cols-2 md:grid-cols-3 gap-5">
+      <StatisticCard
+        class="col-span-2 md:col-span-1"
+        title="Total"
+        :statistics="statistics.total"
+        icon="i-tabler-packages"
+      />
       <StatisticCard title="Ativos" :statistics="statistics.active" icon="i-tabler-box" />
       <StatisticCard title="Inativos" :statistics="statistics.inactive" icon="i-tabler-box-off" />
-      <StatisticCard
-        title="Preço Médio"
-        :statistics="`R$ ${statistics.averagePrice}`"
-        icon="i-tabler-coin"
-      />
     </div>
 
     <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -156,7 +155,7 @@ const dropdownMenuPackageItems = (package_: SelectPackage) => [
               {{ package_.description }}
             </p>
 
-            <div class="flex items-center gap-4 text-sm">
+            <!-- <div class="flex items-center gap-4 text-sm">
               <div class="flex items-center gap-1">
                 <span class="font-medium">{{ formatPrice(package_.price) }}</span>
               </div>
@@ -165,12 +164,7 @@ const dropdownMenuPackageItems = (package_: SelectPackage) => [
                 <Icon name="i-tabler-clock" size="16" />
                 <span>{{ formatDuration(package_.duration) }}</span>
               </div>
-
-              <div class="flex items-center gap-1">
-                <Icon name="i-tabler-calendar-repeat" size="16" />
-                <span>{{ package_.recurrence }} dias</span>
-              </div>
-            </div>
+            </div> -->
           </div>
 
           <div>
@@ -206,7 +200,9 @@ const dropdownMenuPackageItems = (package_: SelectPackage) => [
 
       <p class="text-gray-600 dark:text-gray-400 mb-2">Crie seu primeiro pacote para começar.</p>
 
-      <UButton to="/dashboard/packages/new" icon="i-tabler-plus"> Criar primeiro pacote </UButton>
+      <UButton to="/dashboard/packages/new" icon="i-tabler-plus" class="text-white">
+        Criar primeiro pacote
+      </UButton>
     </div>
 
     <ConfirmDialog

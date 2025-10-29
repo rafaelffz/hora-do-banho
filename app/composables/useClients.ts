@@ -1,4 +1,4 @@
-import type { SelectClient } from "~~/server/database/schema"
+import type { ClientWithPackage } from "~~/server/database/schema"
 
 export const useClients = () => {
   const {
@@ -6,7 +6,7 @@ export const useClients = () => {
     pending: isLoading,
     error,
     refresh: refreshClients,
-  } = useLazyFetch<SelectClient[]>("/api/clients", {
+  } = useLazyFetch<ClientWithPackage[]>("/api/clients", {
     key: "clients",
     default: () => [],
   })

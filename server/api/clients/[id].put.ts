@@ -119,7 +119,7 @@ export default defineAuthenticatedEventHandler(async event => {
             })
 
           if (updatedPet) {
-            petsResult.push(updatedPet)
+            petsResult.push({ ...updatedPet, breed: updatedPet.breed as string | null })
           }
         }
       }

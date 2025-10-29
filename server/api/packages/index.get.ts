@@ -6,13 +6,11 @@ export default defineAuthenticatedEventHandler(async event => {
   const session = await getUserSession(event)
 
   try {
-    const userPackages = await db
+    return await db
       .select()
       .from(packages)
       .where(eq(packages.userId, session.user.id))
       .orderBy(desc(packages.createdAt))
-
-    return userPackages
   } catch (error) {
     throw createError({
       statusCode: 500,

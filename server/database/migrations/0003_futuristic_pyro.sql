@@ -1,1 +1,0 @@
-ALTER TABLE `packages` ADD `recurrence` integer DEFAULT 7 NOT NULL;

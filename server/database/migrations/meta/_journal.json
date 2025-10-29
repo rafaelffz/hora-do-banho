@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1759203865250,
-      "tag": "0000_big_miracleman",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1759976193476,
-      "tag": "0001_dear_silver_surfer",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1761003838927,
-      "tag": "0002_opposite_medusa",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1761106444440,
-      "tag": "0003_futuristic_pyro",
+      "when": 1761608190070,
+      "tag": "0000_stale_vin_gonzales",
       "breakpoints": true
     }
   ]

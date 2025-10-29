@@ -17,6 +17,7 @@ export default defineAuthenticatedEventHandler(async event => {
         .insert(clients)
         .values({
           userId: session.user.id,
+          packagePriceId: result.data.packagePriceId,
           name: result.data.name,
           email: result.data.email || null,
           phone: result.data.phone || null,

@@ -1,4 +1,4 @@
-import type { SelectPackage } from "~~/server/database/schema"
+import type { SelectPackage, SelectPackageList } from "~~/server/database/schema"
 
 export const usePackages = () => {
   const {
@@ -11,6 +11,16 @@ export const usePackages = () => {
     default: () => [],
   })
 
+  const {
+    data: packagesList,
+    pending: isLoadingList,
+    error: errorList,
+    refresh: refreshPackagesList,
+  } = useLazyFetch<SelectPackageList[]>("/api/package-prices/list", {
+    key: "packages-list",
+    default: () => [],
+  })
+
   const statistics = computed(() => {
     const packageList = packages.value || []
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
@@ -20,10 +30,6 @@ export const usePackages = () => {
       active: packageList.filter(pkg => pkg.isActive).length,
       inactive: packageList.filter(pkg => !pkg.isActive).length,
       recent: packageList.filter(pkg => pkg.createdAt >= thirtyDaysAgo).length,
-      averagePrice:
-        packageList.length > 0
-          ? packageList.reduce((sum, pkg) => sum + pkg.price, 0) / packageList.length
-          : 0,
     }
   })
 
@@ -79,9 +85,13 @@ export const usePackages = () => {
     packages: packages,
     isLoading: isLoading,
     error: error,
+    packagesList,
+    isLoadingList,
+    errorList,
     statistics,
     durationOptions,
     refreshPackages,
+    refreshPackagesList,
     filterPackages,
     formatDuration,
     formatPrice,

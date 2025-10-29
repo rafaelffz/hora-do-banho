@@ -3,6 +3,8 @@ const { user, clear } = useUserSession()
 
 const route = useRoute()
 
+const mainEl = useTemplateRef<HTMLElement>("mainEl")
+
 const dropdownItems = ref([
   [
     {
@@ -54,6 +56,17 @@ watch(
     })
   }
 )
+
+if (import.meta.client) {
+  watch(route, () => {
+    setTimeout(() => {
+      mainEl.value?.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      })
+    }, 100)
+  })
+}
 </script>
 
 <template>
@@ -75,6 +88,7 @@ watch(
     </UDashboardNavbar>
 
     <div
+      ref="mainEl"
       class="container mx-auto p-6 font-Inter w-full mt-16 h-[calc(100vh-8.5rem)] flex flex-col overflow-y-auto"
     >
       <slot />
@@ -87,7 +101,7 @@ watch(
         v-for="item in menuItems"
         :key="item.title"
         :to="item.route"
-        class="flex items-center cursor-pointer text-white hover:text-gray-300 px-12 py-2 transition-all duration-200"
+        class="flex items-center justify-center cursor-pointer text-white hover:text-gray-300 w-full py-2 transition-all duration-200"
         :class="{ 'bg-pink-300/80 text-pink-800! rounded-lg': item.active }"
       >
         <UTooltip :text="item.title" :delay-duration="200">

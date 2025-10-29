@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SelectClient } from "~~/server/database/schema"
+import type { ClientWithPackage } from "~~/server/database/schema"
 
 definePageMeta({
   middleware: "auth",
@@ -19,7 +19,7 @@ const confirmDialogState = reactive({
   onConfirm: async () => {},
 })
 
-const openToggleActiveDialog = (client: SelectClient) => {
+const openToggleActiveDialog = (client: ClientWithPackage) => {
   const action = client.isActive ? "Desativar" : "Ativar"
   confirmDialogState.title = `${action} Cliente`
   confirmDialogState.description = `Você tem certeza que deseja ${action.toLowerCase()} o(a) cliente "${
@@ -41,7 +41,7 @@ const openToggleActiveDialog = (client: SelectClient) => {
   isConfirmDialogOpen.value = true
 }
 
-const openDeleteDialog = (client: SelectClient) => {
+const openDeleteDialog = (client: ClientWithPackage) => {
   confirmDialogState.title = "Excluir Cliente"
   confirmDialogState.description = `Você tem certeza que deseja excluir o cliente "${client.name}"? Esta ação não pode ser desfeita.`
 
@@ -55,19 +55,20 @@ const openDeleteDialog = (client: SelectClient) => {
   isConfirmDialogOpen.value = true
 }
 
-const dropdownMenuClientItems = (client: SelectClient) => [
-  {
-    label: "Ativar/Desativar",
-    icon: "i-tabler-toggle-left",
-    onSelect: () => openToggleActiveDialog(client),
-  },
-  {
-    label: "Excluir",
-    icon: "i-tabler-trash",
-    color: "error",
-    to: "",
-    onSelect: async () => openDeleteDialog(client),
-  },
+const dropdownMenuClientItems = (client: ClientWithPackage) => [
+  [
+    {
+      label: "Ativar/Desativar",
+      icon: "i-tabler-toggle-left",
+      click: () => openToggleActiveDialog(client),
+    },
+    {
+      label: "Excluir",
+      icon: "i-tabler-trash",
+      color: "error" as const,
+      click: () => openDeleteDialog(client),
+    },
+  ],
 ]
 </script>
 
@@ -106,7 +107,7 @@ const dropdownMenuClientItems = (client: SelectClient) => [
           class="cursor-pointer"
           loading
           variant="solid"
-          @click="refreshClients"
+          @click="() => refreshClients()"
         >
           Tentar novamente
         </UButton>
@@ -141,14 +142,13 @@ const dropdownMenuClientItems = (client: SelectClient) => [
       >
         <div class="flex items-start justify-between">
           <UUser
-            :description="client.phone"
             :avatar="{
               icon: 'i-tabler-user-circle',
             }"
             size="xl"
           >
             <template #name>
-              <span class="flex items-center gap-2">
+              <span class="flex items-center gap-2 mb-2">
                 {{ client.name }}
 
                 <UBadge
@@ -157,7 +157,22 @@ const dropdownMenuClientItems = (client: SelectClient) => [
                   variant="subtle"
                   class="rounded-full"
                 />
+
+                <UBadge
+                  :label="client.packagePriceId ? 'Pacote' : 'Avulso'"
+                  :color="client.isActive ? 'secondary' : 'warning'"
+                  variant="subtle"
+                  class="rounded-full"
+                />
               </span>
+            </template>
+
+            <template #description>
+              <div class="flex flex-col gap-1">
+                <span v-if="client.phone">{{ client.phone }}</span>
+                <span v-if="client.packageName">{{ client.packageName }}</span>
+                <span v-if="client.recurrence">A cada {{ client.recurrence }} dias</span>
+              </div>
             </template>
           </UUser>
 
@@ -196,7 +211,9 @@ const dropdownMenuClientItems = (client: SelectClient) => [
 
       <p class="text-gray-600 dark:text-gray-400 mb-2">Crie seu primeiro cliente para começar.</p>
 
-      <UButton to="/dashboard/clients/new" icon="i-tabler-plus"> Criar primeiro cliente </UButton>
+      <UButton to="/dashboard/clients/new" icon="i-tabler-plus" class="text-white">
+        Criar primeiro cliente
+      </UButton>
     </div>
 
     <ConfirmDialog

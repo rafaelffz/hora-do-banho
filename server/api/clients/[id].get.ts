@@ -1,6 +1,6 @@
-import { eq, and } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { db } from "~~/server/database"
-import { clients, pets } from "~~/server/database/schema"
+import { clients } from "~~/server/database/schema"
 
 export default defineAuthenticatedEventHandler(async event => {
   const session = await getUserSession(event)
@@ -10,6 +10,7 @@ export default defineAuthenticatedEventHandler(async event => {
     const client = await db.query.clients.findFirst({
       columns: {
         id: true,
+        packagePriceId: true,
         name: true,
         email: true,
         phone: true,

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import type { FormSubmitEvent } from "@nuxt/ui"
-import { ZodError } from "zod/v4"
+import type { DropdownMenuItem, FormSubmitEvent } from "@nuxt/ui"
 import { vMaska } from "maska/vue"
+import { ZodError } from "zod/v4"
 import {
   insertPetSchema,
   petSizes,
@@ -24,6 +24,7 @@ useHead({
 const route = useRoute()
 const toast = useToast()
 const { breeds } = usePets()
+const { packagesList } = usePackages()
 
 const { data: client } = await useFetch(`/api/clients/${route.params.id}`, {
   key: `client-${route.params.id}`,
@@ -49,14 +50,18 @@ async function onSubmit(event: FormSubmitEvent<UpdateClient>) {
   try {
     const clientData = {
       ...client.value,
-      pets: client.value?.pets?.map(pet => ({
-        id: pet.id || "",
-        name: pet.name,
-        breed: pet.breed,
-        size: pet.size,
-        weight: pet.weight,
-        notes: pet.notes,
-      })),
+      pets: client.value?.pets?.map(pet => {
+        const petData = {
+          id: pet.id || "",
+          name: pet.name,
+          breed: pet.breed || "",
+          size: pet.size,
+          weight: pet.weight,
+          notes: pet.notes || "",
+        }
+
+        return petData
+      }),
     }
 
     await $fetch(`/api/clients/${route.params.id}`, {
@@ -177,26 +182,56 @@ const openNewPetDialog = () => {
   isPetDialogOpen.value = true
 }
 
-const dropdownMenuPetItems = (pet: SelectPet) => [
-  {
-    label: "Editar",
-    icon: "i-tabler-edit",
-    onSelect: () => openEditPetDialog(pet),
-  },
-  {
-    label: "Excluir",
-    icon: "i-tabler-trash",
-    color: "error",
-    to: "",
-  },
-]
+const dropdownMenuPetItems = (pet: SelectPet) =>
+  [
+    {
+      label: "Editar",
+      icon: "i-tabler-edit",
+      onSelect: () => openEditPetDialog(pet),
+    },
+    {
+      label: "Excluir",
+      icon: "i-tabler-trash",
+      color: "error",
+      to: "",
+      onSelect: async () => {
+        if (!client.value) return
 
-const cancelar = () => {
+        const updatedPets = client.value.pets.filter(p => {
+          if (pet.id && p.id) {
+            return p.id !== pet.id
+          }
+
+          return p !== pet
+        })
+
+        client.value = {
+          ...client.value,
+          pets: updatedPets,
+        }
+
+        toast.add({
+          title: "Pet excluído com sucesso!",
+          description: `${pet.name} foi removido do cliente.`,
+          color: "success",
+        })
+      },
+    },
+  ] as DropdownMenuItem[]
+
+const cancel = () => {
   if (client.value) {
     client.value = JSON.parse(JSON.stringify(initialClient))
   }
 
   isEditing.value = false
+}
+
+const clearSelectedPackage = async () => {
+  if (isLoading.value || !isEditing.value) return
+
+  if (client.value) client.value.packagePriceId = null
+  await nextTick()
 }
 </script>
 
@@ -233,8 +268,8 @@ const cancelar = () => {
     <div class="size-full">
       <UCard class="w-full" v-if="client">
         <UForm :schema="updateClientSchema" :state="client" class="space-y-5" @submit="onSubmit">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <UFormField label="Nome" name="name" required>
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+            <UFormField label="Nome" name="name" class="md:col-span-4" required>
               <UInput
                 class="w-full"
                 variant="subtle"
@@ -246,7 +281,7 @@ const cancelar = () => {
               />
             </UFormField>
 
-            <UFormField label="Telefone" name="phone">
+            <UFormField label="Telefone" name="phone" class="md:col-span-4">
               <UInput
                 class="w-full"
                 variant="subtle"
@@ -259,7 +294,7 @@ const cancelar = () => {
               />
             </UFormField>
 
-            <UFormField label="Email" name="email">
+            <UFormField label="Email" name="email" class="md:col-span-4">
               <UInput
                 class="w-full"
                 variant="subtle"
@@ -272,7 +307,7 @@ const cancelar = () => {
               />
             </UFormField>
 
-            <UFormField label="Endereço" name="address" required>
+            <UFormField label="Endereço" name="address" class="md:col-span-6">
               <UInput
                 class="w-full"
                 variant="subtle"
@@ -284,7 +319,38 @@ const cancelar = () => {
               />
             </UFormField>
 
-            <UFormField label="Observações" name="notes" class="md:col-span-2">
+            <UFormField label="Pacote" name="package" class="md:col-span-6">
+              <USelectMenu
+                class="w-full"
+                variant="subtle"
+                size="xl"
+                v-model="client.packagePriceId!"
+                value-key="id"
+                description-key="recurrence"
+                :items="
+                  packagesList.map(pkg => ({
+                    label: pkg.name,
+                    id: pkg.id,
+                    recurrence: pkg.recurrence
+                      ? `Recorrência: A cada ${pkg.recurrence} dias`
+                      : 'Sem recorrência',
+                  })) || []
+                "
+                placeholder="Selecione o pacote"
+                icon="i-tabler-package"
+                :disabled="isLoading || !isEditing"
+              >
+                <template #trailing>
+                  <UIcon
+                    name="i-tabler-x"
+                    class="size-5 cursor-pointer text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                    @click.stop="clearSelectedPackage"
+                  />
+                </template>
+              </USelectMenu>
+            </UFormField>
+
+            <UFormField label="Observações" name="notes" class="md:col-span-12">
               <UTextarea
                 class="w-full"
                 variant="subtle"
@@ -358,7 +424,7 @@ const cancelar = () => {
               label="Cancelar"
               class="cursor-pointer"
               :disabled="isLoading"
-              @click="cancelar"
+              @click="cancel"
             />
 
             <UButton
@@ -468,3 +534,4 @@ const cancelar = () => {
     </UModal>
   </div>
 </template>
+, { ( (

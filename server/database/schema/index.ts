@@ -1,5 +1,6 @@
 export * from "./auth"
 export * from "./clients"
 export * from "./packages"
+export * from "./package-prices"
 export * from "./schedulings"
 export * from "./pets"

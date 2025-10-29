@@ -1,7 +1,11 @@
 <script lang="ts" setup>
 import type { FormSubmitEvent } from "@nuxt/ui"
 import { ZodError } from "zod/v4"
-import { updatePackageSchema, type UpdatePackage } from "~~/server/database/schema"
+import {
+  updatePackageWithPricesSchema,
+  type UpdatePackagePrice,
+  type UpdatePackageWithPrices,
+} from "~~/server/database/schema"
 
 definePageMeta({
   middleware: "auth",
@@ -16,20 +20,59 @@ const route = useRoute()
 const toast = useToast()
 const { durationOptions } = usePackages()
 
-const { data: package_ } = await useFetch(`/api/packages/${route.params.id}`, {
-  key: `package-${route.params.id}`,
-})
+const { data: package_ } = await useFetch<UpdatePackageWithPrices>(
+  `/api/packages/${route.params.id}`,
+  {
+    key: `package-${route.params.id}`,
+  }
+)
 
 const isLoading = ref(false)
 const isEditing = ref(false)
 
-async function onSubmit(event: FormSubmitEvent<UpdatePackage>) {
+const state = reactive<UpdatePackageWithPrices>({
+  name: package_.value?.name || "",
+  description: package_.value?.description || "",
+  duration: package_.value?.duration || 60,
+  isActive: package_.value?.isActive ?? true,
+  pricesByRecurrence: [],
+})
+
+const pricesByRecurrence = ref<UpdatePackagePrice[]>(package_.value?.pricesByRecurrence || [])
+
+watch(
+  package_,
+  newPackage => {
+    if (newPackage) {
+      state.name = newPackage.name
+      state.description = newPackage.description || ""
+      state.duration = newPackage.duration
+      state.isActive = newPackage.isActive ?? true
+      pricesByRecurrence.value = newPackage.pricesByRecurrence || []
+    }
+  },
+  { immediate: true }
+)
+
+const addPriceOption = () => {
+  pricesByRecurrence.value.push({ recurrence: 7, price: 140 })
+}
+
+const removePriceOption = (index: number) => {
+  if (pricesByRecurrence.value.length > 1) {
+    pricesByRecurrence.value.splice(index, 1)
+  }
+}
+
+const onSubmit = async (event: FormSubmitEvent<UpdatePackageWithPrices>) => {
   isLoading.value = true
+
+  console.log(event.data)
 
   try {
     await $fetch(`/api/packages/${route.params.id}`, {
       method: "PATCH",
-      body: { ...event.data, id: route.params.id },
+      body: { ...event.data, pricesByRecurrence: pricesByRecurrence.value },
     })
 
     toast.add({
@@ -93,14 +136,19 @@ async function onSubmit(event: FormSubmitEvent<UpdatePackage>) {
 
     <div class="size-full">
       <UCard class="w-full" v-if="package_">
-        <UForm :schema="updatePackageSchema" :state="package_" class="space-y-5" @submit="onSubmit">
+        <UForm
+          :schema="updatePackageWithPricesSchema"
+          :state="state"
+          class="space-y-5"
+          @submit="onSubmit"
+        >
           <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
             <UFormField label="Nome" name="name" required>
               <UInput
                 class="w-full"
                 variant="subtle"
                 size="xl"
-                v-model="package_.name"
+                v-model="state.name"
                 placeholder="Digite o nome do pacote"
                 icon="i-tabler-package"
                 :disabled="isLoading || !isEditing"
@@ -113,27 +161,10 @@ async function onSubmit(event: FormSubmitEvent<UpdatePackage>) {
                 variant="subtle"
                 size="xl"
                 value-key="value"
-                v-model="package_.duration"
+                v-model="state.duration"
                 placeholder="Digite a duração do pacote"
                 :items="durationOptions"
                 icon="i-tabler-clock"
-                :disabled="isLoading || !isEditing"
-              />
-            </UFormField>
-
-            <UFormField label="Preço" name="price" required>
-              <UInputNumber
-                v-model="package_.price"
-                size="xl"
-                class="w-full"
-                variant="subtle"
-                locale="pt-BR"
-                :step-snapping="false"
-                :format-options="{
-                  style: 'currency',
-                  currency: 'BRL',
-                  currencySign: 'accounting',
-                }"
                 :disabled="isLoading || !isEditing"
               />
             </UFormField>
@@ -143,13 +174,93 @@ async function onSubmit(event: FormSubmitEvent<UpdatePackage>) {
                 class="w-full"
                 variant="subtle"
                 size="xl"
-                v-model="package_.description"
+                v-model="state.description"
                 placeholder="Descrição do pacote (detalhes do que está incluso, etc)."
                 :rows="3"
                 :maxlength="500"
                 :disabled="isLoading || !isEditing"
               />
             </UFormField>
+          </div>
+
+          <div class="space-y-4">
+            <div class="flex center justify-between">
+              <h3 class="text-lg font-semibold flex items-center gap-2">
+                <Icon name="i-tabler-currency-dollar" size="20" />
+                Preços por Recorrência
+              </h3>
+
+              <UButton
+                v-if="isEditing"
+                type="button"
+                variant="outline"
+                size="sm"
+                icon="i-tabler-plus"
+                label="Adicionar"
+                class="cursor-pointer"
+                @click="addPriceOption"
+                :disabled="isLoading"
+              />
+            </div>
+
+            <div class="space-y-3">
+              <div
+                v-for="(priceOption, index) in pricesByRecurrence"
+                :key="index"
+                class="relative grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg dark:border-gray-700"
+              >
+                <div
+                  class="absolute -top-2 -left-2 flex items-center justify-center w-6 h-6 bg-primary text-white font-bold text-xs rounded-full z-10"
+                >
+                  {{ index + 1 }}
+                </div>
+
+                <UFormField label="Intervalo de dias">
+                  <UInput
+                    class="w-full"
+                    variant="subtle"
+                    size="xl"
+                    v-model.number="priceOption.recurrence"
+                    placeholder="Selecione a recorrência"
+                    icon="i-tabler-calendar-repeat"
+                    :disabled="isLoading || !isEditing"
+                  />
+                </UFormField>
+
+                <UFormField label="Preço">
+                  <UInput
+                    class="w-full"
+                    variant="subtle"
+                    size="xl"
+                    v-model="priceOption.price"
+                    type="number"
+                    icon="i-tabler-currency-dollar"
+                    :disabled="isLoading || !isEditing"
+                  />
+                </UFormField>
+
+                <div class="flex items-end justify-end">
+                  <UButton
+                    type="button"
+                    variant="ghost"
+                    color="error"
+                    size="lg"
+                    class="cursor-pointer"
+                    icon="i-tabler-trash"
+                    :disabled="pricesByRecurrence.length <= 1 || isLoading"
+                    @click="removePriceOption(index)"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <UAlert
+              icon="i-tabler-info-circle"
+              color="info"
+              variant="soft"
+              title="Dica"
+              description="Defina preços diferentes para cada recorrência. Normalmente, quanto menor o intervalo (mais frequente), maior o preço total."
+            />
           </div>
 
           <div class="flex justify-end gap-3 pt-4" v-if="isEditing">

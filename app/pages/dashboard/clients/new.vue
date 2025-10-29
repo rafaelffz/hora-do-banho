@@ -1,17 +1,14 @@
 <script lang="ts" setup>
 import type { FormSubmitEvent } from "@nuxt/ui"
-import { ZodError } from "zod/v4"
 import { vMaska } from "maska/vue"
+import { ZodError } from "zod/v4"
 import {
-  insertClientSchema,
   insertClientWithPetsSchema,
   insertPetSchema,
   petSizes,
-  type InsertClient,
   type InsertClientWithPets,
   type InsertPet,
 } from "~~/server/database/schema"
-import { type BreedsResponse } from "../../../../shared/types/breeds"
 
 definePageMeta({
   middleware: "auth",
@@ -24,12 +21,14 @@ useHead({
 
 const toast = useToast()
 const { breeds } = usePets()
+const { packagesList } = usePackages()
 
 const state = reactive<Partial<InsertClientWithPets>>({
   name: "",
   email: "",
   phone: "",
   address: "",
+  packagePriceId: undefined,
   notes: "",
   pets: [],
 })
@@ -87,7 +86,7 @@ const openNewPetDialog = () => {
 
 async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
   isLoading.value = true
-  state.pets = [...(state.pets || []), event.data]
+  state.pets = [...(state.pets || []), { ...event.data, id: "" }]
   isLoading.value = false
 
   isNewPetDialogOpen.value = false
@@ -131,8 +130,8 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
           class="space-y-5"
           @submit="onSubmit"
         >
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <UFormField label="Nome" name="name" required>
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+            <UFormField label="Nome" name="name" class="md:col-span-4" required>
               <UInput
                 class="w-full"
                 variant="subtle"
@@ -144,7 +143,7 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
               />
             </UFormField>
 
-            <UFormField label="Telefone" name="phone">
+            <UFormField label="Telefone" name="phone" class="md:col-span-4">
               <UInput
                 class="w-full"
                 variant="subtle"
@@ -157,7 +156,7 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
               />
             </UFormField>
 
-            <UFormField label="Email" name="email">
+            <UFormField label="Email" name="email" class="md:col-span-4">
               <UInput
                 class="w-full"
                 variant="subtle"
@@ -170,7 +169,7 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
               />
             </UFormField>
 
-            <UFormField label="Endereço" name="address" required>
+            <UFormField label="Endereço" name="address" class="md:col-span-6">
               <UInput
                 class="w-full"
                 variant="subtle"
@@ -182,7 +181,30 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
               />
             </UFormField>
 
-            <UFormField label="Observações" name="notes" class="md:col-span-2">
+            <UFormField label="Pacote" name="package" class="md:col-span-6">
+              <USelectMenu
+                class="w-full"
+                variant="subtle"
+                size="xl"
+                v-model="state.packagePriceId"
+                value-key="id"
+                description-key="recurrence"
+                :items="
+                  packagesList.map(pkg => ({
+                    label: pkg.name,
+                    id: pkg.id,
+                    recurrence: pkg.recurrence
+                      ? `Recorrência: A cada ${pkg.recurrence} dias`
+                      : 'Sem recorrência',
+                  })) || []
+                "
+                placeholder="Selecione o pacote"
+                icon="i-tabler-package"
+                :disabled="isLoading"
+              />
+            </UFormField>
+
+            <UFormField label="Observações" name="notes" class="md:col-span-12">
               <UTextarea
                 class="w-full"
                 variant="subtle"
@@ -217,7 +239,18 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
               </div>
             </div>
 
-            <p v-else class="text-sm text-gray-500">Nenhum pet cadastrado ainda.</p>
+            <div v-else>
+              <p class="text-sm text-muted">Nenhum pet cadastrado ainda.</p>
+              <UButton
+                variant="subtle"
+                color="secondary"
+                class="cursor-pointer mt-4"
+                @click="openNewPetDialog"
+              >
+                <Icon name="i-tabler-paw" size="20" />
+                Adicionar Pet
+              </UButton>
+            </div>
           </div>
 
           <div class="flex justify-end gap-3 pt-4">
@@ -326,7 +359,7 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
               label="Cancelar"
               class="cursor-pointer"
               :disabled="isLoading"
-              @click="navigateTo('/dashboard/clients')"
+              @click="isNewPetDialogOpen = false"
             />
 
             <UButton

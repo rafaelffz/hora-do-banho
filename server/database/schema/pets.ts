@@ -42,8 +42,8 @@ export type SelectPet = typeof pets.$inferSelect
 
 export const insertPetSchema = createInsertSchema(pets, {
   name: z4.string().min(1, "Nome é obrigatório"),
-  breed: z4.string().optional().or(z4.literal("")).or(z4.null()),
-  size: z4.enum(["small", "medium", "large"]).optional().or(z4.null()),
+  breed: z4.string().optional().or(z4.literal("")).or(z4.undefined()),
+  size: z4.enum(["small", "medium", "large"]).optional().or(z4.undefined()),
   weight: z4.number().min(0, "Peso inválido").optional().or(z4.null()),
   notes: z4
     .string()
@@ -60,7 +60,7 @@ export const insertPetSchema = createInsertSchema(pets, {
 
 export type InsertPet = z4.infer<typeof insertPetSchema>
 
-export const updatePetSchema = insertPetSchema.partial().extend({
+export const updatePetSchema = insertPetSchema.extend({
   id: z4.string(),
 })
 
