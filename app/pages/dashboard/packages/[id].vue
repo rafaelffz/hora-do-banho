@@ -30,6 +30,14 @@ const { data: package_ } = await useFetch<UpdatePackageWithPrices>(
 const isLoading = ref(false)
 const isEditing = ref(false)
 
+const packagePriceToRemove = ref<UpdatePackagePrice | null>(null)
+const isConfirmDialogOpen = ref(false)
+const confirmDialogState = reactive({
+  title: "",
+  description: "",
+  onConfirm: async () => {},
+})
+
 const state = reactive<UpdatePackageWithPrices>({
   name: package_.value?.name || "",
   description: package_.value?.description || "",
@@ -60,8 +68,40 @@ const addPriceOption = () => {
 
 const removePriceOption = (index: number) => {
   if (pricesByRecurrence.value.length > 1) {
-    pricesByRecurrence.value.splice(index, 1)
+    const itemToRemove = pricesByRecurrence.value[index]
+    if (!itemToRemove) return
+
+    console.log(itemToRemove)
+    openDeleteDialog(itemToRemove)
   }
+}
+
+const openDeleteDialog = (packagePrice: UpdatePackagePrice) => {
+  confirmDialogState.title = "Excluir Preço do Pacote"
+  confirmDialogState.description = `
+    Você tem certeza que deseja excluir o valor R$ ${packagePrice.price} com recorrência de ${packagePrice.recurrence} dias?
+    Esta ação não pode ser desfeita.
+    `
+
+  confirmDialogState.onConfirm = async () => {
+    if (packagePrice.id) {
+      await $fetch(`/api/package-prices/${packagePrice.id}`, { method: "DELETE" })
+    }
+
+    pricesByRecurrence.value = pricesByRecurrence.value.filter(
+      (price: UpdatePackagePrice) => price.id !== packagePrice.id
+    )
+
+    toast.add({
+      title: `Preço de R$ ${packagePrice.price} do pacote excluído`,
+      description: `O preço com recorrência de ${packagePrice.recurrence} dias foi excluído.`,
+      color: "success",
+    })
+
+    isConfirmDialogOpen.value = false
+  }
+
+  isConfirmDialogOpen.value = true
 }
 
 const onSubmit = async (event: FormSubmitEvent<UpdatePackageWithPrices>) => {
@@ -142,7 +182,7 @@ const onSubmit = async (event: FormSubmitEvent<UpdatePackageWithPrices>) => {
           class="space-y-5"
           @submit="onSubmit"
         >
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <UFormField label="Nome" name="name" required>
               <UInput
                 class="w-full"
@@ -169,14 +209,14 @@ const onSubmit = async (event: FormSubmitEvent<UpdatePackageWithPrices>) => {
               />
             </UFormField>
 
-            <UFormField label="Descrição" name="description" class="md:col-span-3">
+            <UFormField label="Descrição" name="description" class="md:col-span-2">
               <UTextarea
                 class="w-full"
                 variant="subtle"
                 size="xl"
                 v-model="state.description"
                 placeholder="Descrição do pacote (detalhes do que está incluso, etc)."
-                :rows="3"
+                :rows="4"
                 :maxlength="500"
                 :disabled="isLoading || !isEditing"
               />
@@ -203,7 +243,7 @@ const onSubmit = async (event: FormSubmitEvent<UpdatePackageWithPrices>) => {
               />
             </div>
 
-            <div class="space-y-3">
+            <div class="space-y-5">
               <div
                 v-for="(priceOption, index) in pricesByRecurrence"
                 :key="index"
@@ -247,7 +287,7 @@ const onSubmit = async (event: FormSubmitEvent<UpdatePackageWithPrices>) => {
                     size="lg"
                     class="cursor-pointer"
                     icon="i-tabler-trash"
-                    :disabled="pricesByRecurrence.length <= 1 || isLoading"
+                    :disabled="pricesByRecurrence.length <= 1 || isLoading || !isEditing"
                     @click="removePriceOption(index)"
                   />
                 </div>
@@ -284,5 +324,12 @@ const onSubmit = async (event: FormSubmitEvent<UpdatePackageWithPrices>) => {
         </UForm>
       </UCard>
     </div>
+
+    <ConfirmDialog
+      v-model:open="isConfirmDialogOpen"
+      :title="confirmDialogState.title"
+      :description="confirmDialogState.description"
+      :onConfirm="confirmDialogState.onConfirm"
+    />
   </div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ClientWithPackage } from "~~/server/database/schema"
+import type { ClientWithActiveSubscriptions } from "~~/server/database/schema"
 
 definePageMeta({
   middleware: "auth",
@@ -19,29 +19,7 @@ const confirmDialogState = reactive({
   onConfirm: async () => {},
 })
 
-const openToggleActiveDialog = (client: ClientWithPackage) => {
-  const action = client.isActive ? "Desativar" : "Ativar"
-  confirmDialogState.title = `${action} Cliente`
-  confirmDialogState.description = `Você tem certeza que deseja ${action.toLowerCase()} o(a) cliente "${
-    client.name
-  }"?`
-
-  confirmDialogState.onConfirm = async () => {
-    await $fetch(`/api/clients/${client.id}`, {
-      method: "PUT",
-      body: { isActive: !client.isActive },
-    })
-
-    const clientToUpdate = clients.value.find(c => c.id === client.id)
-    if (clientToUpdate) clientToUpdate.isActive = !clientToUpdate.isActive
-
-    await refreshClients()
-  }
-
-  isConfirmDialogOpen.value = true
-}
-
-const openDeleteDialog = (client: ClientWithPackage) => {
+const openDeleteDialog = (client: ClientWithActiveSubscriptions) => {
   confirmDialogState.title = "Excluir Cliente"
   confirmDialogState.description = `Você tem certeza que deseja excluir o cliente "${client.name}"? Esta ação não pode ser desfeita.`
 
@@ -55,18 +33,13 @@ const openDeleteDialog = (client: ClientWithPackage) => {
   isConfirmDialogOpen.value = true
 }
 
-const dropdownMenuClientItems = (client: ClientWithPackage) => [
+const dropdownMenuClientItems = (client: ClientWithActiveSubscriptions) => [
   [
-    {
-      label: "Ativar/Desativar",
-      icon: "i-tabler-toggle-left",
-      click: () => openToggleActiveDialog(client),
-    },
     {
       label: "Excluir",
       icon: "i-tabler-trash",
       color: "error" as const,
-      click: () => openDeleteDialog(client),
+      onSelect: () => openDeleteDialog(client),
     },
   ],
 ]
@@ -141,40 +114,28 @@ const dropdownMenuClientItems = (client: ClientWithPackage) => [
         :ui="{ body: 'sm:p-4', footer: 'p-2 sm:px-4' }"
       >
         <div class="flex items-start justify-between">
-          <UUser
-            :avatar="{
-              icon: 'i-tabler-user-circle',
-            }"
-            size="xl"
-          >
-            <template #name>
-              <span class="flex items-center gap-2 mb-2">
-                {{ client.name }}
+          <ClientOnly>
+            <UUser
+              :avatar="{
+                icon: 'i-tabler-user-circle',
+              }"
+              size="xl"
+            >
+              <template #name>
+                <span class="flex items-center gap-2 mb-2">
+                  {{ client.name }}
+                </span>
+              </template>
 
-                <UBadge
-                  :label="client.isActive ? 'Ativo' : 'Inativo'"
-                  :color="client.isActive ? 'success' : 'error'"
-                  variant="subtle"
-                  class="rounded-full"
-                />
-
-                <UBadge
-                  :label="client.packagePriceId ? 'Pacote' : 'Avulso'"
-                  :color="client.isActive ? 'secondary' : 'warning'"
-                  variant="subtle"
-                  class="rounded-full"
-                />
-              </span>
-            </template>
-
-            <template #description>
-              <div class="flex flex-col gap-1">
-                <span v-if="client.phone">{{ client.phone }}</span>
-                <span v-if="client.packageName">{{ client.packageName }}</span>
-                <span v-if="client.recurrence">A cada {{ client.recurrence }} dias</span>
-              </div>
-            </template>
-          </UUser>
+              <template #description>
+                <div class="flex flex-col gap-1">
+                  <span v-if="client.phone">{{ client.phone }}</span>
+                  <span v-if="client.packageName">{{ client.packageName }}</span>
+                  <span v-if="client.recurrence">A cada {{ client.recurrence }} dias</span>
+                </div>
+              </template>
+            </UUser>
+          </ClientOnly>
 
           <div>
             <UDropdownMenu :items="dropdownMenuClientItems(client)">

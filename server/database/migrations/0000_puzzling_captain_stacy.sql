@@ -17,12 +17,9 @@ CREATE TABLE `clients` (
 	`phone` text,
 	`address` text,
 	`notes` text,
-	`package_price_id` text,
-	`is_active` integer DEFAULT true NOT NULL,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL,
-	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`package_price_id`) REFERENCES `package_prices`(`id`) ON UPDATE no action ON DELETE set null
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `clients_email_unique` ON `clients` (`email`);--> statement-breakpoint
@@ -85,4 +82,28 @@ CREATE TABLE `pets` (
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL,
 	FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `client_subscriptions` (
+	`id` text PRIMARY KEY NOT NULL,
+	`client_id` text NOT NULL,
+	`package_price_id` text NOT NULL,
+	`pet_id` text NOT NULL,
+	`pickup_day_of_week` integer NOT NULL,
+	`pickup_time` text,
+	`next_pickup_date` integer,
+	`base_price` real NOT NULL,
+	`final_price` real NOT NULL,
+	`adjustment_value` real DEFAULT 0,
+	`adjustment_percentage` real DEFAULT 0,
+	`adjustment_reason` text,
+	`start_date` integer NOT NULL,
+	`end_date` integer,
+	`is_active` integer DEFAULT true NOT NULL,
+	`notes` text,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`package_price_id`) REFERENCES `package_prices`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`pet_id`) REFERENCES `pets`(`id`) ON UPDATE no action ON DELETE cascade
 );

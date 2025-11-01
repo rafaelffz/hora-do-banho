@@ -60,6 +60,28 @@ export const insertPetSchema = createInsertSchema(pets, {
 
 export type InsertPet = z4.infer<typeof insertPetSchema>
 
+export const insertPetWithSubscriptionsSchema = insertPetSchema.extend({
+  subscription: z4
+    .object({
+      id: z4.string().optional().or(z4.null()),
+      packagePriceId: z4.uuidv7(),
+      pickupDayOfWeek: z4.number().min(0).max(6),
+      pickupTime: z4
+        .string()
+        .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+        .optional()
+        .or(z4.null()),
+      startDate: z4.number().min(1),
+      adjustmentPercentage: z4.number().min(-100).max(100).default(0),
+      adjustmentReason: z4.string().optional().or(z4.literal("")).or(z4.null()),
+      notes: z4.string().max(500).optional().or(z4.literal("")).or(z4.null()),
+    })
+    .optional()
+    .or(z4.null()),
+})
+
+export type InsertPetWithSubscriptions = z4.infer<typeof insertPetWithSubscriptionsSchema>
+
 export const updatePetSchema = insertPetSchema.extend({
   id: z4.string(),
 })

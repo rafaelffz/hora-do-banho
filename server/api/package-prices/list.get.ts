@@ -11,6 +11,7 @@ export default defineAuthenticatedEventHandler(async event => {
         id: packagePrices.id,
         name: packages.name,
         recurrence: packagePrices.recurrence,
+        price: packagePrices.price,
       })
       .from(packagePrices)
       .innerJoin(packages, eq(packagePrices.packageId, packages.id))

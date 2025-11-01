@@ -1,11 +1,11 @@
-import { integer, sqliteTable, text, real } from "drizzle-orm/sqlite-core"
-import { v7 as uuid } from "uuid"
-import { clients } from "./clients"
-import { packages } from "./packages"
-import { pets } from "./pets"
-import { createInsertSchema, createSelectSchema } from "drizzle-zod"
-import z4 from "zod/v4"
 import { relations } from "drizzle-orm"
+import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core"
+import { createInsertSchema, createSelectSchema } from "drizzle-zod"
+import { v7 as uuid } from "uuid"
+import z4 from "zod/v4"
+import { clients } from "./clients"
+import { packagePrices } from "./package-prices"
+import { pets } from "./pets"
 
 export const clientSubscriptions = sqliteTable("client_subscriptions", {
   id: text()
@@ -14,13 +14,15 @@ export const clientSubscriptions = sqliteTable("client_subscriptions", {
   clientId: text()
     .notNull()
     .references(() => clients.id, { onDelete: "cascade" }),
-  packageId: text()
+  packagePriceId: text()
     .notNull()
-    .references(() => packages.id, { onDelete: "cascade" }),
+    .references(() => packagePrices.id, { onDelete: "cascade" }),
   petId: text()
     .notNull()
     .references(() => pets.id, { onDelete: "cascade" }),
-  recurrence: integer().notNull(),
+  pickupDayOfWeek: integer().notNull(),
+  pickupTime: text(),
+  nextPickupDate: integer(),
   basePrice: real().notNull(),
   finalPrice: real().notNull(),
   adjustmentValue: real().default(0),
@@ -43,9 +45,9 @@ export const clientSubscriptionsRelations = relations(clientSubscriptions, ({ on
     fields: [clientSubscriptions.clientId],
     references: [clients.id],
   }),
-  package: one(packages, {
-    fields: [clientSubscriptions.packageId],
-    references: [packages.id],
+  packagePrice: one(packagePrices, {
+    fields: [clientSubscriptions.packagePriceId],
+    references: [packagePrices.id],
   }),
   pet: one(pets, {
     fields: [clientSubscriptions.petId],
@@ -58,9 +60,8 @@ export type SelectClientSubscription = typeof clientSubscriptions.$inferSelect
 export const selectClientSubscriptionSchema = createSelectSchema(clientSubscriptions, {
   id: z4.uuid("ID inválido"),
   clientId: z4.uuid("Cliente inválido"),
-  packageId: z4.uuid("Pacote inválido"),
+  packagePriceId: z4.uuid("Preço do pacote inválido"),
   petId: z4.uuid("Pet inválido"),
-  recurrence: z4.number(),
   basePrice: z4.number(),
   finalPrice: z4.number(),
   adjustmentValue: z4.number(),
@@ -72,9 +73,15 @@ export type SelectClientSubscriptionList = z4.infer<typeof selectClientSubscript
 
 export const insertClientSubscriptionSchema = createInsertSchema(clientSubscriptions, {
   clientId: z4.uuid("Cliente inválido"),
-  packageId: z4.uuid("Pacote inválido"),
+  packagePriceId: z4.uuid("Preço do pacote inválido"),
   petId: z4.uuid("Pet inválido"),
-  recurrence: z4.number().min(1, "Recorrência deve ser maior que zero"),
+  pickupDayOfWeek: z4.number().min(0).max(6, "Dia da semana deve estar entre 0 e 6"),
+  pickupTime: z4
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Horário deve estar no formato HH:MM")
+    .optional()
+    .or(z4.null()),
+  nextPickupDate: z4.number().optional().or(z4.null()),
   basePrice: z4.number().min(0, "Preço base deve ser maior que zero"),
   finalPrice: z4.number().min(0, "Preço final deve ser maior que zero"),
   adjustmentValue: z4.number().default(0),
@@ -125,12 +132,45 @@ export function applyAdjustment(
   return { finalPrice, adjustmentValue }
 }
 
-export const adjustmentReasons = [
-  { label: "Desconto múltiplos pets", value: "desconto_multiplos_pets" },
-  { label: "Desconto fidelidade", value: "desconto_fidelidade" },
-  { label: "Taxa de deslocamento", value: "taxa_deslocamento" },
-  { label: "Taxa de urgência", value: "taxa_urgencia" },
-  { label: "Desconto promocional", value: "desconto_promocional" },
-  { label: "Acréscimo por dificuldade", value: "acrescimo_dificuldade" },
-  { label: "Outros", value: "outros" },
+export const daysOfWeek = [
+  { label: "Domingo", value: 0 },
+  { label: "Segunda-feira", value: 1 },
+  { label: "Terça-feira", value: 2 },
+  { label: "Quarta-feira", value: 3 },
+  { label: "Quinta-feira", value: 4 },
+  { label: "Sexta-feira", value: 5 },
+  { label: "Sábado", value: 6 },
 ] as const
+
+export function calculateNextPickupDate(
+  startDate: number,
+  recurrence: number,
+  pickupDayOfWeek: number
+): number | undefined {
+  const start = new Date(startDate)
+  const today = new Date()
+
+  const referenceDate = start > today ? start : today
+
+  let nextDate = new Date(referenceDate)
+  const currentDayOfWeek = nextDate.getDay()
+
+  let daysUntilPickup = pickupDayOfWeek - currentDayOfWeek
+  if (daysUntilPickup <= 0) {
+    daysUntilPickup += 7
+
+    nextDate.setDate(nextDate.getDate() + daysUntilPickup)
+
+    if (recurrence > 7) {
+      const weeksSinceStart = Math.floor(
+        (nextDate.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000)
+      )
+      const intervalWeeks = Math.ceil(recurrence / 7)
+      const weeksToAdd =
+        Math.ceil(weeksSinceStart / intervalWeeks) * intervalWeeks - weeksSinceStart
+      nextDate.setDate(nextDate.getDate() + weeksToAdd * 7)
+    }
+
+    return nextDate.getTime()
+  }
+}

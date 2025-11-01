@@ -49,8 +49,6 @@ export const selectPackageListSchema = createSelectSchema(packages, {
     recurrence: z4.number().optional(),
   })
 
-export type SelectPackageList = z4.infer<typeof selectPackageListSchema>
-
 export const insertPackageSchema = createInsertSchema(packages, {
   name: z4.string().min(1, "Nome é obrigatório"),
   description: z4.string().optional().or(z4.literal("")).or(z4.null()),

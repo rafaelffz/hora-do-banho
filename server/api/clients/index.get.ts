@@ -1,6 +1,6 @@
-import { eq, desc } from "drizzle-orm"
+import { eq, desc, sql, count } from "drizzle-orm"
 import { db } from "~~/server/database"
-import { clients, packagePrices, packages } from "~~/server/database/schema"
+import { clients, clientSubscriptions } from "~~/server/database/schema"
 
 export default defineAuthenticatedEventHandler(async event => {
   const session = await getUserSession(event)
@@ -12,17 +12,15 @@ export default defineAuthenticatedEventHandler(async event => {
         name: clients.name,
         email: clients.email,
         phone: clients.phone,
-        isActive: clients.isActive,
-        packagePriceId: clients.packagePriceId,
-        packageName: packages.name,
-        recurrence: packagePrices.recurrence,
-        price: packagePrices.price,
+        address: clients.address,
+        notes: clients.notes,
         createdAt: clients.createdAt,
+        activeSubscriptionsCount: count(clientSubscriptions.id),
       })
       .from(clients)
-      .leftJoin(packagePrices, eq(clients.packagePriceId, packagePrices.id))
-      .leftJoin(packages, eq(packagePrices.packageId, packages.id))
+      .leftJoin(clientSubscriptions, eq(clients.id, clientSubscriptions.clientId))
       .where(eq(clients.userId, session.user.id))
+      .groupBy(clients.id)
       .orderBy(desc(clients.createdAt))
 
     return userClients

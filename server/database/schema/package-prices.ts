@@ -41,6 +41,13 @@ export const selectPackagePriceSchema = createSelectSchema(packagePrices, {
 
 export type SelectPackagePriceList = z4.infer<typeof selectPackagePriceSchema>
 
+export type SelectPackageList = {
+  id: string
+  name: string
+  recurrence: number
+  price: number
+}
+
 export const insertPackagePriceSchema = createInsertSchema(packagePrices, {
   packageId: z4.uuid("Pacote inválido").optional().or(z4.literal("")),
   recurrence: z4.number().min(1, "Recorrência deve ser maior que zero"),

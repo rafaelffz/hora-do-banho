@@ -3,11 +3,12 @@ import type { FormSubmitEvent } from "@nuxt/ui"
 import { vMaska } from "maska/vue"
 import { ZodError } from "zod/v4"
 import {
-  insertClientWithPetsSchema,
-  insertPetSchema,
+  insertClientWithPetsAndSubscriptionsSchema,
+  insertPetWithSubscriptionsSchema,
   petSizes,
-  type InsertClientWithPets,
+  type InsertClientWithPetsAndSubscriptions,
   type InsertPet,
+  type InsertPetWithSubscriptions,
 } from "~~/server/database/schema"
 
 definePageMeta({
@@ -22,29 +23,81 @@ useHead({
 const toast = useToast()
 const { breeds } = usePets()
 const { packagesList } = usePackages()
+const { daysOfWeek, formatPrice, calculatePriceWithAdjustment } = useSubscriptions()
 
-const state = reactive<Partial<InsertClientWithPets>>({
+const state = reactive<Partial<InsertClientWithPetsAndSubscriptions>>({
   name: "",
   email: "",
   phone: "",
   address: "",
-  packagePriceId: undefined,
   notes: "",
   pets: [],
 })
 
-const petState = reactive<Partial<InsertPet>>({
+const petState = reactive<Partial<InsertPet & { subscription?: any }>>({
   name: "",
   size: "small",
   breed: "",
   weight: null,
   notes: "",
+  subscription: null,
 })
 
 const isLoading = ref(false)
 const isNewPetDialogOpen = ref(false)
+const hasSubscription = ref(false)
 
-async function onSubmit(event: FormSubmitEvent<InsertClientWithPets>) {
+watch(hasSubscription, newValue => {
+  if (newValue && !petState.subscription) {
+    petState.subscription = {
+      packagePriceId: "",
+      pickupDayOfWeek: 1,
+      pickupTime: null,
+      startDate: Date.now(),
+      adjustmentPercentage: 0,
+      adjustmentReason: null,
+      notes: null,
+    }
+  } else if (!newValue) {
+    petState.subscription = null
+  }
+})
+const selectedPackagePrice = ref<any>(null)
+
+const priceCalculation = computed(() => {
+  if (!selectedPackagePrice.value || !petState.subscription) {
+    return {
+      basePrice: 0,
+      finalPrice: 0,
+      formattedBasePrice: formatPrice(0),
+      formattedFinalPrice: formatPrice(0),
+    }
+  }
+
+  return calculatePriceWithAdjustment(
+    selectedPackagePrice.value.price,
+    petState.subscription?.adjustmentPercentage || 0
+  )
+})
+
+watch(
+  petState,
+  newValue => {
+    console.log(newValue)
+  },
+  {
+    deep: true,
+  }
+)
+
+watch(
+  () => petState.subscription?.packagePriceId,
+  newPackageId => {
+    selectedPackagePrice.value = packagesList.value?.find(pkg => pkg.id === newPackageId) || null
+  }
+)
+
+async function onSubmit(event: FormSubmitEvent<InsertClientWithPetsAndSubscriptions>) {
   isLoading.value = true
 
   try {
@@ -71,7 +124,7 @@ async function onSubmit(event: FormSubmitEvent<InsertClientWithPets>) {
     } else {
       toast.add({
         title: "Erro ao cadastrar cliente",
-        description: "Tente novamente em alguns instantes.",
+        description: error?.data?.message || "Tente novamente em alguns instantes.",
         color: "error",
       })
     }
@@ -81,12 +134,51 @@ async function onSubmit(event: FormSubmitEvent<InsertClientWithPets>) {
 }
 
 const openNewPetDialog = () => {
+  Object.assign(petState, {
+    name: "",
+    size: "small",
+    breed: "",
+    weight: null,
+    notes: "",
+    subscription: null,
+  })
+
+  hasSubscription.value = false
+  selectedPackagePrice.value = null
   isNewPetDialogOpen.value = true
 }
 
-async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
+async function onSubmitPetForm(event: FormSubmitEvent<InsertPetWithSubscriptions>) {
   isLoading.value = true
-  state.pets = [...(state.pets || []), { ...event.data, id: "" }]
+
+  const petData = {
+    ...event.data,
+    id: "",
+    subscription:
+      hasSubscription.value && petState.subscription
+        ? {
+            packagePriceId: petState.subscription.packagePriceId,
+            pickupDayOfWeek: petState.subscription.pickupDayOfWeek,
+            pickupTime:
+              petState.subscription.pickupTime && petState.subscription.pickupTime.trim() !== ""
+                ? petState.subscription.pickupTime
+                : null,
+            startDate: petState.subscription.startDate,
+            adjustmentPercentage: petState.subscription.adjustmentPercentage,
+            adjustmentReason:
+              petState.subscription.adjustmentReason &&
+              petState.subscription.adjustmentReason.trim() !== ""
+                ? petState.subscription.adjustmentReason
+                : null,
+            notes:
+              petState.subscription.notes && petState.subscription.notes.trim() !== ""
+                ? petState.subscription.notes
+                : null,
+          }
+        : null,
+  }
+
+  state.pets = [...(state.pets || []), petData]
   isLoading.value = false
 
   isNewPetDialogOpen.value = false
@@ -96,6 +188,16 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
     description: `${event.data.name} foi adicionado à lista de pets do cliente.`,
     color: "success",
   })
+}
+
+const removePet = (index: number) => {
+  if (state.pets) {
+    state.pets.splice(index, 1)
+  }
+}
+
+const formatStartDate = (timestamp: number) => {
+  return new Date(timestamp).toISOString().split("T")[0]
 }
 </script>
 
@@ -115,23 +217,18 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
           Adicionar Cliente
         </h1>
       </div>
-
-      <UButton variant="subtle" color="secondary" class="cursor-pointer" @click="openNewPetDialog">
-        <Icon name="i-tabler-paw" size="20" />
-        Adicionar Pet
-      </UButton>
     </div>
 
     <div class="size-full">
       <UCard class="w-full">
         <UForm
-          :schema="insertClientWithPetsSchema"
+          :schema="insertClientWithPetsAndSubscriptionsSchema"
           :state="state"
           class="space-y-5"
           @submit="onSubmit"
         >
           <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
-            <UFormField label="Nome" name="name" class="md:col-span-4" required>
+            <UFormField label="Nome" name="name" class="md:col-span-6" required>
               <UInput
                 class="w-full"
                 variant="subtle"
@@ -143,7 +240,7 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
               />
             </UFormField>
 
-            <UFormField label="Telefone" name="phone" class="md:col-span-4">
+            <UFormField label="Telefone" name="phone" class="md:col-span-6">
               <UInput
                 class="w-full"
                 variant="subtle"
@@ -156,7 +253,7 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
               />
             </UFormField>
 
-            <UFormField label="Email" name="email" class="md:col-span-4">
+            <UFormField label="Email" name="email" class="md:col-span-6">
               <UInput
                 class="w-full"
                 variant="subtle"
@@ -181,29 +278,6 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
               />
             </UFormField>
 
-            <UFormField label="Pacote" name="package" class="md:col-span-6">
-              <USelectMenu
-                class="w-full"
-                variant="subtle"
-                size="xl"
-                v-model="state.packagePriceId"
-                value-key="id"
-                description-key="recurrence"
-                :items="
-                  packagesList.map(pkg => ({
-                    label: pkg.name,
-                    id: pkg.id,
-                    recurrence: pkg.recurrence
-                      ? `Recorrência: A cada ${pkg.recurrence} dias`
-                      : 'Sem recorrência',
-                  })) || []
-                "
-                placeholder="Selecione o pacote"
-                icon="i-tabler-package"
-                :disabled="isLoading"
-              />
-            </UFormField>
-
             <UFormField label="Observações" name="notes" class="md:col-span-12">
               <UTextarea
                 class="w-full"
@@ -211,7 +285,7 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
                 size="xl"
                 v-model="state.notes"
                 placeholder="Informações adicionais sobre o cliente"
-                :rows="5"
+                :rows="3"
                 :maxlength="500"
                 :disabled="isLoading"
               />
@@ -219,37 +293,86 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
           </div>
 
           <div>
-            <h2 class="text-lg font-semibold mb-3">Pets Cadastrados</h2>
+            <div class="flex items-center justify-between my-6">
+              <h2 class="text-lg font-semibold">Pets Cadastrados</h2>
 
-            <div v-if="state.pets && state.pets.length > 0" class="space-y-3 flex gap-6 flex-wrap">
+              <UButton
+                variant="subtle"
+                color="secondary"
+                label="Adicionar Pet"
+                leading-icon="i-tabler-paw"
+                class="cursor-pointer"
+                @click="openNewPetDialog"
+              />
+            </div>
+
+            <div v-if="state.pets && state.pets.length > 0" class="space-y-3">
               <div
                 v-for="(pet, index) in state.pets"
                 :key="index"
-                class="p-4 border border-gray-200 border-t-4 border-t-primary rounded-lg w-full max-w-2xs text-wrap overflow-auto"
+                class="p-4 border border-gray-200 border-t-4 border-t-primary rounded-lg"
               >
-                <h3 class="text-md font-medium">
-                  {{ pet.name }}
-                </h3>
-                <p v-if="pet.breed" class="text-sm text-muted">Raça: {{ pet.breed }}</p>
-                <p v-if="pet.size" class="text-sm text-muted">
-                  Tamanho: {{ petSizes.find(size => size.value === pet.size)?.label || pet.size }}
-                </p>
-                <p v-if="pet.weight" class="text-sm text-muted">Peso: {{ pet.weight }} kg</p>
-                <p v-if="pet.notes" class="text-sm text-muted">Observações: {{ pet.notes }}</p>
+                <div class="flex justify-between items-start">
+                  <div class="flex-1">
+                    <h3 class="text-md font-medium mb-2">{{ pet.name }}</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted">
+                      <div>
+                        <p v-if="pet.breed">Raça: {{ pet.breed }}</p>
+                        <p v-if="pet.size">
+                          Tamanho:
+                          {{ petSizes.find(size => size.value === pet.size)?.label || pet.size }}
+                        </p>
+                        <p v-if="pet.weight">Peso: {{ pet.weight }} kg</p>
+                        <p v-if="pet.notes">Observações: {{ pet.notes }}</p>
+                      </div>
+
+                      <div v-if="pet.subscription">
+                        <p class="font-medium text-primary mb-1">Subscription Ativa:</p>
+                        <p>
+                          Pacote:
+                          {{
+                            packagesList?.find(pkg => pkg.id === pet.subscription?.packagePriceId)
+                              ?.name
+                          }}
+                        </p>
+                        <p>
+                          Coleta:
+                          {{
+                            daysOfWeek.find(day => day.value === pet.subscription?.pickupDayOfWeek)
+                              ?.label
+                          }}
+                        </p>
+                        <p v-if="pet.subscription?.pickupTime">
+                          Horário: {{ pet.subscription.pickupTime }}
+                        </p>
+                        <p>
+                          Preço:
+                          {{
+                            formatPrice(
+                              packagesList?.find(pkg => pkg.id === pet.subscription?.packagePriceId)
+                                ?.price || 0
+                            )
+                          }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <UButton
+                    icon="i-tabler-trash"
+                    size="sm"
+                    variant="ghost"
+                    color="error"
+                    class="cursor-pointer"
+                    @click="removePet(index)"
+                  />
+                </div>
               </div>
             </div>
 
             <div v-else>
               <p class="text-sm text-muted">Nenhum pet cadastrado ainda.</p>
-              <UButton
-                variant="subtle"
-                color="secondary"
-                class="cursor-pointer mt-4"
-                @click="openNewPetDialog"
-              >
-                <Icon name="i-tabler-paw" size="20" />
-                Adicionar Pet
-              </UButton>
             </div>
           </div>
 
@@ -275,18 +398,14 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
       </UCard>
     </div>
 
-    <UModal
-      title="Adicionar Pet"
-      v-model:open="isNewPetDialogOpen"
-      :ui="{ footer: 'justify-end' }"
-      class="max-w-2xl"
-    >
+    <UModal title="Adicionar Pet" v-model:open="isNewPetDialogOpen" class="max-w-4xl">
       <template #body>
         <UForm
-          :schema="insertPetSchema"
-          :state="petState"
+          :schema="insertPetWithSubscriptionsSchema"
+          :state="{ ...petState, subscription: hasSubscription ? petState.subscription : null }"
           class="space-y-5"
           @submit="onSubmitPetForm"
+          @error="error => console.error('Form validation error:', error)"
         >
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <UFormField label="Nome" name="name" required>
@@ -335,21 +454,183 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPet>) {
                 placeholder="Digite o peso"
                 :disabled="isLoading"
                 type="number"
+                step="0.1"
               />
             </UFormField>
 
-            <UFormField label="Observações" name="notes" class="md:col-span-2">
+            <UFormField label="Observações do Pet" name="notes" class="md:col-span-2">
               <UTextarea
                 class="w-full"
                 variant="subtle"
                 size="xl"
                 v-model="petState.notes"
                 placeholder="Informações adicionais sobre o pet"
-                :rows="5"
+                :rows="3"
                 :maxlength="500"
                 :disabled="isLoading"
               />
             </UFormField>
+          </div>
+
+          <div class="border-t pt-5">
+            <div class="flex items-center gap-3 mb-4">
+              <UCheckbox v-model="hasSubscription" label="Configurar pacote para este pet" />
+            </div>
+
+            <div v-if="hasSubscription" class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <UFormField
+                  label="Pacote"
+                  name="subscription.packagePriceId"
+                  required
+                  :error="
+                    hasSubscription && !petState.subscription?.packagePriceId
+                      ? 'Pacote é obrigatório'
+                      : undefined
+                  "
+                >
+                  <USelectMenu
+                    class="w-full"
+                    variant="subtle"
+                    size="xl"
+                    v-model="petState.subscription!.packagePriceId"
+                    value-key="id"
+                    :items="
+                      packagesList?.map(pkg => ({
+                        label: `${pkg.name} - ${formatPrice(pkg.price || 0)}`,
+                        id: pkg.id,
+                        description: pkg.recurrence
+                          ? `Recorrência: A cada ${pkg.recurrence} dias`
+                          : 'Sem recorrência',
+                      })) || []
+                    "
+                    placeholder="Selecione o pacote"
+                    icon="i-tabler-package"
+                    :disabled="isLoading"
+                  />
+                </UFormField>
+
+                <UFormField label="Dia da Semana" name="subscription.pickupDayOfWeek" required>
+                  <USelectMenu
+                    class="w-full"
+                    variant="subtle"
+                    size="xl"
+                    v-model="petState.subscription!.pickupDayOfWeek"
+                    value-key="value"
+                    :items="daysOfWeek as any"
+                    placeholder="Selecione o dia"
+                    icon="i-tabler-calendar"
+                    :disabled="isLoading"
+                  />
+                </UFormField>
+
+                <UFormField label="Horário (opcional)" name="subscription.pickupTime">
+                  <UInput
+                    class="w-full"
+                    variant="subtle"
+                    size="xl"
+                    v-model="petState.subscription!.pickupTime"
+                    placeholder="14:30"
+                    icon="i-tabler-clock"
+                    :disabled="isLoading"
+                    v-maska="'##:##'"
+                  />
+                </UFormField>
+
+                <UFormField label="Data de Início" name="subscription.startDate" required>
+                  <UInput
+                    class="w-full"
+                    variant="subtle"
+                    size="xl"
+                    v-model="petState.subscription!.startDate"
+                    type="date"
+                    :value="formatStartDate(petState.subscription!.startDate)"
+                    @input="
+                      petState.subscription!.startDate = new Date($event.target.value).getTime()
+                    "
+                    icon="i-tabler-calendar-event"
+                    :disabled="isLoading"
+                  />
+                </UFormField>
+
+                <UFormField label="Ajuste de Preço (%)" name="subscription.adjustmentPercentage">
+                  <UInput
+                    class="w-full"
+                    variant="subtle"
+                    size="xl"
+                    v-model="petState.subscription!.adjustmentPercentage"
+                    type="number"
+                    placeholder="0"
+                    icon="i-tabler-percentage"
+                    :disabled="isLoading"
+                    step="0.1"
+                    min="-100"
+                    max="100"
+                  />
+                </UFormField>
+
+                <UFormField label="Motivo do Ajuste" name="subscription.adjustmentReason">
+                  <UInput
+                    class="w-full"
+                    variant="subtle"
+                    size="xl"
+                    v-model="petState.subscription!.adjustmentReason"
+                    placeholder="Ex: Desconto fidelidade"
+                    icon="i-tabler-note"
+                    :disabled="isLoading"
+                  />
+                </UFormField>
+              </div>
+
+              <UFormField label="Observações da Subscription" name="subscription.notes">
+                <UTextarea
+                  class="w-full"
+                  variant="subtle"
+                  size="xl"
+                  v-model="petState.subscription!.notes"
+                  placeholder="Informações adicionais sobre a subscription"
+                  :rows="2"
+                  :maxlength="500"
+                  :disabled="isLoading"
+                />
+              </UFormField>
+
+              <div v-if="selectedPackagePrice" class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                <h4 class="font-medium mb-2">Resumo do Preço:</h4>
+
+                <div class="space-y-1 text-sm">
+                  <div class="flex justify-between">
+                    <span>Preço Base:</span>
+                    <span>{{ priceCalculation.formattedBasePrice }}</span>
+                  </div>
+
+                  <div
+                    v-if="petState.subscription!.adjustmentPercentage !== 0"
+                    class="flex justify-between"
+                  >
+                    <span>Ajuste ({{ petState.subscription!.adjustmentPercentage }}%):</span>
+                    <span
+                      :class="
+                        petState.subscription!.adjustmentPercentage > 0
+                          ? 'text-red-600'
+                          : 'text-green-600'
+                      "
+                    >
+                      {{
+                        "formattedAdjustmentValue" in priceCalculation
+                          ? priceCalculation.formattedAdjustmentValue
+                          : formatPrice(0)
+                      }}
+                    </span>
+                  </div>
+
+                  <div class="flex justify-between font-medium pt-2 border-t">
+                    <span>Preço Final:</span>
+                    <span>{{ priceCalculation.formattedFinalPrice }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="flex justify-end gap-3 pt-4">
