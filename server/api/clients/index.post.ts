@@ -1,18 +1,17 @@
+import { eq } from "drizzle-orm"
 import { db } from "~~/server/database"
 import {
-  clients,
-  insertClientWithPetsAndSubscriptionsSchema,
-  pets,
-  clientSubscriptions,
-  packagePrices,
+    clients,
+    clientSubscriptions,
+    insertClientWithPetsAndSubscriptionsSchema,
+    packagePrices,
+    pets,
 } from "~~/server/database/schema"
-import { sendZodError } from "~~/server/utils/sendZodError"
-import { eq } from "drizzle-orm"
 import {
-  calculateNextPickupDate,
-  applyAdjustment,
-  calculateMultiPetDiscount,
+    applyAdjustment,
+    calculateMultiPetDiscount
 } from "~~/server/database/schema/client-subscriptions"
+import { sendZodError } from "~~/server/utils/sendZodError"
 
 export default defineAuthenticatedEventHandler(async event => {
   const result = await readValidatedBody(
@@ -105,11 +104,7 @@ export default defineAuthenticatedEventHandler(async event => {
 
             const { finalPrice, adjustmentValue } = applyAdjustment(basePrice, adjustmentPercentage)
 
-            const nextPickupDate = calculateNextPickupDate(
-              subscription.startDate,
-              packagePrice.recurrence || 7,
-              subscription.pickupDayOfWeek
-            )
+            const nextPickupDate = subscription.startDate
 
             subscriptionsToInsert.push({
               clientId: client.id,

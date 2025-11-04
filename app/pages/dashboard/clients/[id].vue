@@ -1,17 +1,15 @@
 <script lang="ts" setup>
+import { CalendarDate, DateFormatter, getLocalTimeZone } from "@internationalized/date"
 import type { DropdownMenuItem, FormSubmitEvent } from "@nuxt/ui"
 import { vMaska } from "maska/vue"
 import { ZodError } from "zod/v4"
-import type {
-  ClientWithPetsAndSubscriptions,
-  PetFormData,
-  PetWithSubscription,
-} from "~~/app/types/client"
+import type { ClientWithPetsAndSubscriptions, PetWithSubscription } from "~~/app/types/client"
 import {
   insertPetWithSubscriptionsSchema,
   petSizes,
   updateClientSchema,
   type InsertPet,
+  type InsertPetWithSubscriptions,
   type UpdateClient,
 } from "~~/server/database/schema"
 
@@ -30,6 +28,10 @@ const { breeds } = usePets()
 const { packagesList } = usePackages()
 const { daysOfWeek, formatPrice, calculatePriceWithAdjustment, getDayOfWeekLabel } =
   useSubscriptions()
+
+const df = new DateFormatter("pt-BR", {
+  dateStyle: "medium",
+})
 
 const { data: client, refresh } = await useFetch<ClientWithPetsAndSubscriptions>(
   `/api/clients/${route.params.id}`,
@@ -54,27 +56,66 @@ const petSelected = ref<PetWithSubscription | null>(null)
 const hasSubscription = ref(false)
 const selectedPackagePrice = ref<any>(null)
 
-const petState = reactive<PetFormData>({
+const petState = reactive<Partial<InsertPet & { subscription?: any }>>({
   name: "",
   size: "small",
   breed: "",
   weight: null,
   notes: "",
-  subscription: {
-    id: "",
-    packagePriceId: "",
-    pickupDayOfWeek: 1,
-    pickupTime: "",
-    startDate: Date.now(),
-    adjustmentPercentage: 0,
-    adjustmentReason: "",
-    notes: "",
-    isActive: true,
+  subscription: null,
+})
+
+const calendarDate = computed({
+  get() {
+    if (petState.subscription?.startDate) {
+      const date = new Date(petState.subscription.startDate)
+      return new CalendarDate(date.getFullYear(), date.getMonth() + 1, date.getDate())
+    }
+
+    return new CalendarDate(2025, 1, 1)
+  },
+  set(value) {
+    if (petState.subscription && value) {
+      petState.subscription.startDate = value.toDate(getLocalTimeZone()).getTime()
+    }
   },
 })
 
+const pickupTimeModel = computed({
+  get() {
+    return petState.subscription?.pickupTime || ""
+  },
+  set(value: string) {
+    if (petState.subscription) {
+      petState.subscription.pickupTime = value.trim() === "" ? null : value
+    }
+  },
+})
+
+const isDateDisabled = (date: any) => {
+  if (!petState.subscription || petState.subscription.pickupDayOfWeek === undefined) {
+    return false
+  }
+
+  const jsDate = date.toDate(getLocalTimeZone())
+  const dayOfWeek = jsDate.getDay()
+  return dayOfWeek !== petState.subscription.pickupDayOfWeek
+}
+
+const totalPrice = computed(() => {
+  let total = client.value?.subscriptions?.reduce((acc, sub) => acc + (sub.finalPrice || 0), 0)
+  if (!total) total = 0
+
+  const moneyFormatted = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(total)
+
+  return moneyFormatted
+})
+
 const priceCalculation = computed(() => {
-  if (!selectedPackagePrice.value) {
+  if (!selectedPackagePrice.value || !petState.subscription) {
     return {
       basePrice: 0,
       finalPrice: 0,
@@ -85,14 +126,71 @@ const priceCalculation = computed(() => {
 
   return calculatePriceWithAdjustment(
     selectedPackagePrice.value.price,
-    petState.subscription.adjustmentPercentage
+    petState.subscription?.adjustmentPercentage || 0
   )
 })
 
 watch(
-  () => petState.subscription.packagePriceId,
+  () => petState.subscription?.packagePriceId,
   newPackageId => {
     selectedPackagePrice.value = packagesList.value?.find(pkg => pkg.id === newPackageId) || null
+  }
+)
+
+watch(
+  () => petState.subscription?.pickupDayOfWeek,
+  newDayOfWeek => {
+    if (newDayOfWeek !== undefined && petState.subscription) {
+      const today = new Date()
+      const todayDayOfWeek = today.getDay()
+
+      let daysToAdd = newDayOfWeek - todayDayOfWeek
+
+      if (daysToAdd <= 0) {
+        daysToAdd += 7
+      }
+
+      const nextDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysToAdd)
+      petState.subscription.startDate = nextDate.getTime()
+    }
+  }
+)
+
+watch(hasSubscription, newValue => {
+  if (newValue && !petState.subscription) {
+    petState.subscription = {
+      id: "",
+      packagePriceId: "",
+      pickupDayOfWeek: 1,
+      pickupTime: null,
+      startDate: Date.now(),
+      adjustmentPercentage: 0,
+      adjustmentReason: "",
+      notes: "",
+      isActive: true,
+    }
+
+    const today = new Date()
+    const todayDayOfWeek = today.getDay()
+    let daysToAdd = 1 - todayDayOfWeek
+
+    if (daysToAdd <= 0) {
+      daysToAdd += 7
+    }
+
+    const nextDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysToAdd)
+    petState.subscription.startDate = nextDate.getTime()
+  } else if (!newValue) {
+    petState.subscription = null
+  }
+})
+
+watch(
+  () => petState?.subscription?.adjustmentPercentage,
+  newValue => {
+    if (!newValue && petState.subscription) {
+      petState.subscription.adjustmentPercentage = 0
+    }
   }
 )
 
@@ -124,9 +222,6 @@ async function onSubmit(event: FormSubmitEvent<UpdateClient>) {
           : null,
       })),
     }
-
-    console.log(event.data)
-    console.log(clientData)
 
     await $fetch(`/api/clients/${route.params.id}`, {
       method: "PUT",
@@ -161,7 +256,7 @@ async function onSubmit(event: FormSubmitEvent<UpdateClient>) {
   }
 }
 
-const onSubmitPet = async (event: FormSubmitEvent<InsertPet>) => {
+const onSubmitPet = async (event: FormSubmitEvent<InsertPetWithSubscriptions>) => {
   if (!client.value) return
 
   isLoading.value = true
@@ -179,7 +274,10 @@ const onSubmitPet = async (event: FormSubmitEvent<InsertPet>) => {
           ? {
               packagePriceId: petState.subscription.packagePriceId,
               pickupDayOfWeek: petState.subscription.pickupDayOfWeek,
-              pickupTime: petState.subscription.pickupTime || null,
+              pickupTime:
+                petState.subscription.pickupTime && petState.subscription.pickupTime.trim() !== ""
+                  ? petState.subscription.pickupTime
+                  : null,
               startDate: petState.subscription.startDate,
               adjustmentPercentage: petState.subscription.adjustmentPercentage,
               adjustmentReason: petState.subscription.adjustmentReason || null,
@@ -215,7 +313,10 @@ const onSubmitPet = async (event: FormSubmitEvent<InsertPet>) => {
                 id: petState.subscription.id || undefined,
                 packagePriceId: petState.subscription.packagePriceId,
                 pickupDayOfWeek: petState.subscription.pickupDayOfWeek,
-                pickupTime: petState.subscription.pickupTime || null,
+                pickupTime:
+                  petState.subscription.pickupTime && petState.subscription.pickupTime.trim() !== ""
+                    ? petState.subscription.pickupTime
+                    : null,
                 startDate: petState.subscription.startDate,
                 adjustmentPercentage: petState.subscription.adjustmentPercentage,
                 adjustmentReason: petState.subscription.adjustmentReason || null,
@@ -249,7 +350,7 @@ const onSubmitPet = async (event: FormSubmitEvent<InsertPet>) => {
 
 const openDeleteDialog = (pet: PetWithSubscription) => {
   confirmDialogState.title = "Excluir Pet"
-  confirmDialogState.description = `Você tem certeza que deseja excluir o pet "${pet.name}"? Esta ação não pode ser desfeita.`
+  confirmDialogState.description = `Você tem certeza que deseja excluir o pet "${pet.name}"?`
 
   confirmDialogState.onConfirm = async () => {
     if (!client.value) return
@@ -281,11 +382,26 @@ const openEditPetDialog = (pet: PetWithSubscription) => {
 
   if (pet.subscription) {
     hasSubscription.value = true
+
+    if (!petState.subscription) {
+      petState.subscription = {
+        id: "",
+        packagePriceId: "",
+        pickupDayOfWeek: 1,
+        pickupTime: null,
+        startDate: Date.now(),
+        adjustmentPercentage: 0,
+        adjustmentReason: "",
+        notes: "",
+        isActive: true,
+      }
+    }
+
     Object.assign(petState.subscription, {
       id: pet.subscription.id || "",
       packagePriceId: pet.subscription.packagePriceId || "",
       pickupDayOfWeek: pet.subscription.pickupDayOfWeek || 1,
-      pickupTime: pet.subscription.pickupTime || "",
+      pickupTime: pet.subscription.pickupTime || null,
       startDate: pet.subscription.startDate || Date.now(),
       adjustmentPercentage: pet.subscription.adjustmentPercentage || 0,
       adjustmentReason: pet.subscription.adjustmentReason || "",
@@ -294,7 +410,7 @@ const openEditPetDialog = (pet: PetWithSubscription) => {
     })
   } else {
     hasSubscription.value = false
-    resetSubscriptionState()
+    petState.subscription = null
   }
 
   isPetDialogOpen.value = true
@@ -304,7 +420,6 @@ const openNewPetDialog = () => {
   isRegister.value = true
   petSelected.value = null
   resetPetState()
-  resetSubscriptionState()
   hasSubscription.value = false
   isPetDialogOpen.value = true
 }
@@ -320,17 +435,30 @@ const resetPetState = () => {
 }
 
 const resetSubscriptionState = () => {
-  Object.assign(petState.subscription, {
-    id: "",
-    packagePriceId: "",
-    pickupDayOfWeek: 1,
-    pickupTime: "",
-    startDate: Date.now(),
-    adjustmentPercentage: 0,
-    adjustmentReason: "",
-    notes: "",
-    isActive: true,
-  })
+  if (petState.subscription) {
+    Object.assign(petState.subscription, {
+      id: "",
+      packagePriceId: "",
+      pickupDayOfWeek: 1,
+      pickupTime: null,
+      startDate: Date.now(),
+      adjustmentPercentage: 0,
+      adjustmentReason: "",
+      notes: "",
+      isActive: true,
+    })
+
+    const today = new Date()
+    const todayDayOfWeek = today.getDay()
+    let daysToAdd = 1 - todayDayOfWeek
+
+    if (daysToAdd <= 0) {
+      daysToAdd += 7
+    }
+
+    const nextDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysToAdd)
+    petState.subscription.startDate = nextDate.getTime()
+  }
   selectedPackagePrice.value = null
 }
 
@@ -344,6 +472,7 @@ const dropdownMenuPetItems = (pet: PetWithSubscription): DropdownMenuItem[][] =>
     {
       label: "Excluir",
       icon: "i-tabler-trash",
+      color: "error" as const,
       onSelect: () => openDeleteDialog(pet),
     },
   ],
@@ -465,8 +594,8 @@ const formatStartDate = (timestamp: number) => {
           </div>
 
           <div>
-            <div class="flex items-end justify-between my-6">
-              <h2 class="text-lg font-semibold">Pets do Cliente</h2>
+            <div class="flex items-end justify-between mt-6 mb-4">
+              <h2 class="text-xl font-semibold">Pets do Cliente</h2>
               <UButton
                 variant="subtle"
                 color="secondary"
@@ -491,8 +620,8 @@ const formatStartDate = (timestamp: number) => {
 
                     <div class="grid grid-cols-1 md:grid-cols-2">
                       <div>
-                        <h4 class="font-medium text-sm text-muted mb-2">Informações do Pet</h4>
-                        <div class="space-y-1 text-sm text-gray-600">
+                        <h4 class="font-medium text-sm text-gray-600 mb-2">Informações do Pet</h4>
+                        <div class="space-y-1 text-sm text-muted">
                           <p v-if="pet.breed">Raça: {{ pet.breed }}</p>
                           <p v-if="pet.size">
                             Tamanho:
@@ -508,7 +637,7 @@ const formatStartDate = (timestamp: number) => {
                       <ClientOnly v-if="pet.subscription">
                         <div>
                           <h4 class="font-medium text-sm text-primary mb-1">Pacote Ativo</h4>
-                          <div class="space-y-1 text-sm text-gray-600">
+                          <div class="space-y-1 text-sm text-muted">
                             <p>
                               Pacote:
                               {{
@@ -573,6 +702,15 @@ const formatStartDate = (timestamp: number) => {
                   </div>
                 </div>
               </div>
+
+              <USeparator class="w-full pt-2" />
+
+              <div v-if="client?.subscriptions">
+                <p class="text-xl font-semibold text-muted mb-2">Valor total de Pacotes:</p>
+                <p class="text-4xl font-bold">
+                  {{ totalPrice }}
+                </p>
+              </div>
             </div>
 
             <p v-else class="text-sm text-gray-500">Nenhum pet cadastrado ainda.</p>
@@ -608,8 +746,12 @@ const formatStartDate = (timestamp: number) => {
       <template #body>
         <UForm
           :schema="insertPetWithSubscriptionsSchema"
-          :state="{ ...petState, subscription: hasSubscription ? petState.subscription : null }"
+          :state="{
+            ...petState,
+            subscription: hasSubscription ? petState.subscription : null,
+          }"
           @submit="onSubmitPet"
+          @error="error => console.error(error)"
           class="space-y-5"
         >
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -727,7 +869,7 @@ const formatStartDate = (timestamp: number) => {
                     class="w-full"
                     variant="subtle"
                     size="xl"
-                    v-model="petState.subscription.pickupTime"
+                    v-model="pickupTimeModel"
                     placeholder="14:30"
                     icon="i-tabler-clock"
                     :disabled="isLoading"
@@ -736,19 +878,30 @@ const formatStartDate = (timestamp: number) => {
                 </UFormField>
 
                 <UFormField label="Data de Início" required>
-                  <UInput
-                    class="w-full"
-                    variant="subtle"
-                    size="xl"
-                    v-model="petState.subscription.startDate"
-                    type="date"
-                    :value="formatStartDate(petState.subscription.startDate)"
-                    @input="
-                      petState.subscription.startDate = new Date($event.target.value).getTime()
-                    "
-                    icon="i-tabler-calendar-event"
-                    :disabled="isLoading"
-                  />
+                  <UPopover class="w-full">
+                    <UButton
+                      color="neutral"
+                      variant="subtle"
+                      size="xl"
+                      icon="i-lucide-calendar"
+                      class="text-muted"
+                    >
+                      {{
+                        calendarDate
+                          ? df.format(calendarDate.toDate(getLocalTimeZone()))
+                          : "Selecione uma Data"
+                      }}
+                    </UButton>
+
+                    <template #content>
+                      <UCalendar
+                        v-model="calendarDate"
+                        :is-date-disabled="isDateDisabled"
+                        class="p-2"
+                        size="lg"
+                      />
+                    </template>
+                  </UPopover>
                 </UFormField>
 
                 <UFormField label="Ajuste de Preço (%)">

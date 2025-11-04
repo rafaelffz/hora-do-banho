@@ -11,6 +11,7 @@ useHead({
 })
 
 const { clients, isLoading, error, statistics, refreshClients } = useClients()
+const toast = useToast()
 
 const isConfirmDialogOpen = ref(false)
 const confirmDialogState = reactive({
@@ -21,11 +22,17 @@ const confirmDialogState = reactive({
 
 const openDeleteDialog = (client: ClientWithActiveSubscriptions) => {
   confirmDialogState.title = "Excluir Cliente"
-  confirmDialogState.description = `Você tem certeza que deseja excluir o cliente "${client.name}"? Esta ação não pode ser desfeita.`
+  confirmDialogState.description = `Você tem certeza que deseja excluir o(a) cliente "${client.name}"? Esta ação não pode ser desfeita.`
 
   confirmDialogState.onConfirm = async () => {
     await $fetch(`/api/clients/${client.id}`, { method: "DELETE" })
     clients.value = clients.value.filter(c => c.id !== client.id)
+
+    toast.add({
+      title: "Cliente excluído com sucesso!",
+      description: `${client.name} foi removido da lista.`,
+      color: "success",
+    })
 
     await refreshClients()
   }
@@ -87,10 +94,8 @@ const dropdownMenuClientItems = (client: ClientWithActiveSubscriptions) => [
       </template>
     </UAlert>
 
-    <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-5">
       <StatisticCard title="Total" :statistics="statistics.total" icon="i-tabler-users" />
-      <StatisticCard title="Ativos" :statistics="statistics.active" icon="i-tabler-user-check" />
-      <StatisticCard title="Inativos" :statistics="statistics.inactive" icon="i-tabler-user-x" />
       <StatisticCard
         title="Novos"
         subtitle="Últimos 30 dias"

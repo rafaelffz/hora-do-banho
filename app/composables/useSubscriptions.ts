@@ -47,10 +47,7 @@ export const useSubscriptions = () => {
     return { finalPrice, adjustmentValue }
   }
 
-  const calculatePriceWithAdjustment = (
-    basePrice: number,
-    adjustmentPercentage: number = 0
-  ) => {
+  const calculatePriceWithAdjustment = (basePrice: number, adjustmentPercentage: number = 0) => {
     const { finalPrice, adjustmentValue } = applyAdjustment(basePrice, adjustmentPercentage)
     return {
       basePrice,

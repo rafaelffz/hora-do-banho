@@ -1,18 +1,17 @@
+import { eq, inArray } from "drizzle-orm"
 import { db } from "~~/server/database"
 import {
-  clients,
-  updateClientWithPetsAndSubscriptionsSchema,
-  pets,
-  clientSubscriptions,
-  packagePrices,
+    clients,
+    clientSubscriptions,
+    packagePrices,
+    pets,
+    updateClientWithPetsAndSubscriptionsSchema,
 } from "~~/server/database/schema"
-import { sendZodError } from "~~/server/utils/sendZodError"
-import { eq, inArray } from "drizzle-orm"
 import {
-  calculateNextPickupDate,
-  applyAdjustment,
-  calculateMultiPetDiscount,
+    applyAdjustment,
+    calculateMultiPetDiscount
 } from "~~/server/database/schema/client-subscriptions"
+import { sendZodError } from "~~/server/utils/sendZodError"
 
 export default defineAuthenticatedEventHandler(async event => {
   const clientId = getRouterParam(event, "id")
@@ -113,8 +112,6 @@ export default defineAuthenticatedEventHandler(async event => {
       let petsResult: any[] = []
       let subscriptionsResult: any[] = []
 
-      console.log(result.data)
-
       const existingPets = result.data.pets?.filter(pet => pet.id && pet.id.trim() !== "")
       const newPets = result.data.pets?.filter(
         pet => !pet.id || pet.id.trim() === "" || pet.id.includes("temp")
@@ -155,26 +152,29 @@ export default defineAuthenticatedEventHandler(async event => {
                 sub => sub.petId === pet.id
               )
 
+              const petsWithSubscriptions = result.data.pets!.filter(p => p.subscription)
+              const petIndex = petsWithSubscriptions.findIndex(p => p.id === pet.id)
+
               if (existingSubscription) {
                 await updateSubscription(
                   tx,
                   existingSubscription.id,
                   pet.subscription,
-                  result.data.pets!.length
+                  petsWithSubscriptions.length,
+                  petIndex === 0
                 )
               } else {
-                // Criar nova subscription
                 const newSubscription = await createSubscription(
                   tx,
                   clientId,
                   pet.id,
                   pet.subscription,
-                  result.data.pets!.filter(p => p.subscription).length
+                  petsWithSubscriptions.length,
+                  petIndex === 0
                 )
                 subscriptionsResult.push(newSubscription)
               }
             } else if (existingClient.subscriptions.find(sub => sub.petId === pet.id)) {
-              // Desativar subscription se não há mais dados de subscription
               await tx
                 .update(clientSubscriptions)
                 .set({ isActive: false })
@@ -184,7 +184,7 @@ export default defineAuthenticatedEventHandler(async event => {
         }
       }
 
-      if (newPets.length > 0) {
+      if (newPets && newPets.length > 0) {
         const petsToInsert = newPets
           .filter(pet => pet.name)
           .map(pet => ({
@@ -200,18 +200,22 @@ export default defineAuthenticatedEventHandler(async event => {
           const insertedPets = await tx.insert(pets).values(petsToInsert).returning()
           petsResult.push(...insertedPets)
 
-          // Criar subscriptions para novos pets
           for (let i = 0; i < newPets.length; i++) {
             const petData = newPets[i]
             if (petData.subscription && petData.name) {
               const petRecord = insertedPets.find(p => p.name === petData.name)
               if (petRecord) {
+                const petsWithSubscriptions = result.data.pets!.filter(p => p.subscription)
+                const existingPetsWithSubs = (existingPets || []).filter(p => p.subscription).length
+                const isFirstPet = existingPetsWithSubs === 0 && i === 0
+
                 const newSubscription = await createSubscription(
                   tx,
                   clientId,
                   petRecord.id,
                   petData.subscription,
-                  result.data.pets!.filter(p => p.subscription).length
+                  petsWithSubscriptions.length,
+                  isFirstPet
                 )
                 subscriptionsResult.push(newSubscription)
               }
@@ -246,9 +250,9 @@ async function createSubscription(
   clientId: string,
   petId: string,
   subscriptionData: any,
-  totalPetsWithSubscription: number
+  totalPetsWithSubscription: number,
+  isFirstPet: boolean = false
 ) {
-  // Buscar preço base do pacote
   const packagePrice = await tx.query.packagePrices.findFirst({
     where: eq(packagePrices.id, subscriptionData.packagePriceId),
     with: {
@@ -265,21 +269,14 @@ async function createSubscription(
 
   const basePrice = packagePrice.price
 
-  // Calcular desconto para múltiplos pets
   let adjustmentPercentage = subscriptionData.adjustmentPercentage || 0
-  if (totalPetsWithSubscription > 1 && !adjustmentPercentage) {
-    adjustmentPercentage = calculateMultiPetDiscount(totalPetsWithSubscription)
+  if (isFirstPet && totalPetsWithSubscription > 1) {
+    adjustmentPercentage += calculateMultiPetDiscount(totalPetsWithSubscription)
   }
 
-  // Aplicar ajuste
   const { finalPrice, adjustmentValue } = applyAdjustment(basePrice, adjustmentPercentage)
 
-  // Calcular próxima data de coleta
-  const nextPickupDate = calculateNextPickupDate(
-    subscriptionData.startDate,
-    packagePrice.recurrence || 7,
-    subscriptionData.pickupDayOfWeek
-  )
+  const nextPickupDate = subscriptionData.startDate
 
   const [subscription] = await tx
     .insert(clientSubscriptions)
@@ -307,9 +304,9 @@ async function updateSubscription(
   tx: any,
   subscriptionId: string,
   subscriptionData: any,
-  totalPetsWithSubscription: number
+  totalPetsWithSubscription: number,
+  isFirstPet: boolean = false
 ) {
-  // Buscar preço base do pacote
   const packagePrice = await tx.query.packagePrices.findFirst({
     where: eq(packagePrices.id, subscriptionData.packagePriceId),
     with: {
@@ -326,21 +323,14 @@ async function updateSubscription(
 
   const basePrice = packagePrice.price
 
-  // Calcular desconto para múltiplos pets
   let adjustmentPercentage = subscriptionData.adjustmentPercentage || 0
-  if (totalPetsWithSubscription > 1 && !adjustmentPercentage) {
-    adjustmentPercentage = calculateMultiPetDiscount(totalPetsWithSubscription)
+  if (isFirstPet && totalPetsWithSubscription > 1) {
+    adjustmentPercentage += calculateMultiPetDiscount(totalPetsWithSubscription)
   }
 
-  // Aplicar ajuste
   const { finalPrice, adjustmentValue } = applyAdjustment(basePrice, adjustmentPercentage)
 
-  // Calcular próxima data de coleta
-  const nextPickupDate = calculateNextPickupDate(
-    subscriptionData.startDate,
-    packagePrice.recurrence || 7,
-    subscriptionData.pickupDayOfWeek
-  )
+  const nextPickupDate = subscriptionData.startDate
 
   const [subscription] = await tx
     .update(clientSubscriptions)

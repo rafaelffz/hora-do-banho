@@ -1,4 +1,10 @@
 <script lang="ts" setup>
+import {
+  CalendarDate,
+  DateFormatter,
+  getLocalTimeZone,
+  type DateValue,
+} from "@internationalized/date"
 import type { FormSubmitEvent } from "@nuxt/ui"
 import { vMaska } from "maska/vue"
 import { ZodError } from "zod/v4"
@@ -43,6 +49,39 @@ const petState = reactive<Partial<InsertPet & { subscription?: any }>>({
   subscription: null,
 })
 
+const df = new DateFormatter("pt-BR", {
+  dateStyle: "medium",
+})
+
+const calendarDate = computed({
+  get() {
+    if (petState.subscription?.startDate) {
+      const date = new Date(petState.subscription.startDate)
+      return new CalendarDate(date.getFullYear(), date.getMonth() + 1, date.getDate())
+    }
+
+    return new CalendarDate(2025, 1, 1)
+  },
+  set(value) {
+    if (petState.subscription && value) {
+      const newDate = value.toDate(getLocalTimeZone())
+
+      petState.subscription.startDate = newDate.getTime()
+    }
+  },
+})
+
+const isDateDisabled = (date: DateValue) => {
+  if (!petState.subscription || petState.subscription.pickupDayOfWeek === undefined) {
+    return false
+  }
+
+  const jsDate = date.toDate(getLocalTimeZone())
+  const dayOfWeek = jsDate.getDay()
+
+  return dayOfWeek !== petState.subscription.pickupDayOfWeek
+}
+
 const isLoading = ref(false)
 const isNewPetDialogOpen = ref(false)
 const hasSubscription = ref(false)
@@ -62,6 +101,27 @@ watch(hasSubscription, newValue => {
     petState.subscription = null
   }
 })
+
+watch(
+  () => petState.subscription?.pickupDayOfWeek,
+  newDayOfWeek => {
+    if (newDayOfWeek !== undefined && petState.subscription) {
+      const today = new Date()
+      const todayDayOfWeek = today.getDay()
+
+      let daysToAdd = newDayOfWeek - todayDayOfWeek
+
+      if (daysToAdd <= 0) {
+        daysToAdd += 7
+      }
+
+      const nextDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysToAdd)
+
+      petState.subscription.startDate = nextDate.getTime()
+    }
+  }
+)
+
 const selectedPackagePrice = ref<any>(null)
 
 const priceCalculation = computed(() => {
@@ -79,16 +139,6 @@ const priceCalculation = computed(() => {
     petState.subscription?.adjustmentPercentage || 0
   )
 })
-
-watch(
-  petState,
-  newValue => {
-    console.log(newValue)
-  },
-  {
-    deep: true,
-  }
-)
 
 watch(
   () => petState.subscription?.packagePriceId,
@@ -163,7 +213,7 @@ async function onSubmitPetForm(event: FormSubmitEvent<InsertPetWithSubscriptions
               petState.subscription.pickupTime && petState.subscription.pickupTime.trim() !== ""
                 ? petState.subscription.pickupTime
                 : null,
-            startDate: petState.subscription.startDate,
+            startDate: new Date(petState.subscription.startDate).getTime(),
             adjustmentPercentage: petState.subscription.adjustmentPercentage,
             adjustmentReason:
               petState.subscription.adjustmentReason &&
@@ -402,7 +452,16 @@ const formatStartDate = (timestamp: number) => {
       <template #body>
         <UForm
           :schema="insertPetWithSubscriptionsSchema"
-          :state="{ ...petState, subscription: hasSubscription ? petState.subscription : null }"
+          :state="{
+            ...petState,
+            subscription:
+              hasSubscription && petState.subscription
+                ? {
+                    ...petState.subscription,
+                    startDate: new Date(petState.subscription.startDate).getTime(),
+                  }
+                : null,
+          }"
           class="space-y-5"
           @submit="onSubmitPetForm"
           @error="error => console.error('Form validation error:', error)"
@@ -538,19 +597,30 @@ const formatStartDate = (timestamp: number) => {
                 </UFormField>
 
                 <UFormField label="Data de Início" name="subscription.startDate" required>
-                  <UInput
-                    class="w-full"
-                    variant="subtle"
-                    size="xl"
-                    v-model="petState.subscription!.startDate"
-                    type="date"
-                    :value="formatStartDate(petState.subscription!.startDate)"
-                    @input="
-                      petState.subscription!.startDate = new Date($event.target.value).getTime()
-                    "
-                    icon="i-tabler-calendar-event"
-                    :disabled="isLoading"
-                  />
+                  <UPopover class="w-full">
+                    <UButton
+                      color="neutral"
+                      variant="subtle"
+                      size="xl"
+                      icon="i-lucide-calendar"
+                      class="text-muted"
+                    >
+                      {{
+                        calendarDate
+                          ? df.format(calendarDate.toDate(getLocalTimeZone()))
+                          : "Selecione uma Data"
+                      }}
+                    </UButton>
+
+                    <template #content>
+                      <UCalendar
+                        v-model="calendarDate"
+                        :is-date-disabled="isDateDisabled"
+                        class="p-2"
+                        size="lg"
+                      />
+                    </template>
+                  </UPopover>
                 </UFormField>
 
                 <UFormField label="Ajuste de Preço (%)" name="subscription.adjustmentPercentage">

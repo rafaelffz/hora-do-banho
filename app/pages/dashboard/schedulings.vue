@@ -13,7 +13,6 @@ useHead({
 const viewMode = ref<"timeline" | "calendar">("timeline")
 const isLoading = ref(false)
 
-// Buscar agendamentos dos próximos 30 dias para timeline
 const {
   data: timelineSchedulings,
   pending: timelinePending,
