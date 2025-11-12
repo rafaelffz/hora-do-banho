@@ -267,14 +267,14 @@ const onSubmit = async (event: FormSubmitEvent<UpdatePackageWithPrices>) => {
                   />
                 </UFormField>
 
-                <UFormField label="Preço">
+                <UFormField label="Preço Mensal">
                   <UInput
                     class="w-full"
                     variant="subtle"
                     size="xl"
                     v-model="priceOption.price"
                     type="number"
-                    icon="i-tabler-currency-dollar"
+                    icon="i-tabler-currency-real"
                     :disabled="isLoading || !isEditing"
                   />
                 </UFormField>

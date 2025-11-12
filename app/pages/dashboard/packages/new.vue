@@ -60,7 +60,9 @@ const onSubmit = async (event: FormSubmitEvent<InsertPackageWithPrices>) => {
 
     toast.add({
       title: "Pacote criado com sucesso!",
-      description: `${packageResult.name} foi adicionado com ${packageResult.pricesByRecurrence.length} ${packageResult.pricesByRecurrence.length === 1 ? "opção" : "opções"} de preço.`,
+      description: `${packageResult.name} foi adicionado com ${
+        packageResult.pricesByRecurrence.length
+      } ${packageResult.pricesByRecurrence.length === 1 ? "opção" : "opções"} de preço.`,
       color: "success",
     })
 
@@ -187,14 +189,14 @@ const onSubmit = async (event: FormSubmitEvent<InsertPackageWithPrices>) => {
                   />
                 </UFormField>
 
-                <UFormField label="Preço">
+                <UFormField label="Preço Mensal">
                   <UInput
                     class="w-full"
                     variant="subtle"
                     size="xl"
                     v-model.number="priceOption.price"
                     type="number"
-                    icon="i-tabler-currency-dollar"
+                    icon="i-tabler-currency-real"
                     :disabled="isLoading"
                   />
                 </UFormField>

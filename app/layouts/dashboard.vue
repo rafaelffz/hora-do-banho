@@ -89,13 +89,13 @@ if (import.meta.client) {
 
     <div
       ref="mainEl"
-      class="container mx-auto p-6 font-Inter w-full mt-16 h-[calc(100vh-8.5rem)] flex flex-col overflow-y-auto"
+      class="container mx-auto p-6 font-Inter w-full mt-16 min-h-full flex flex-col mb-16 overflow-y-auto"
     >
       <slot />
     </div>
 
     <div
-      class="flex items-center justify-around h-16 bg-pink-400/95 w-full fixed left-1/2 -translate-x-1/2 bottom-0 px-4 border-t border-pink-300"
+      class="flex items-center justify-around h-14 bg-pink-400/95 w-full fixed left-1/2 -translate-x-1/2 bottom-0 px-4 border-t border-pink-300"
     >
       <NuxtLink
         v-for="item in menuItems"
