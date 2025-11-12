@@ -126,7 +126,7 @@ export default defineAuthenticatedEventHandler(async event => {
               finalPrice,
               adjustmentValue,
               adjustmentPercentage,
-              adjustmentReason: subscription.adjustmentReason || null,
+              adjustmentReason: adjustmentValue !== 0 ? "desconto_multiplos_pets" : null,
               startDate: subscription.startDate,
               notes: subscription.notes || null,
             })
