@@ -96,7 +96,6 @@ export default defineAuthenticatedEventHandler(async event => {
       })
     }
 
-    // Organizar pets com suas respectivas subscriptions
     const petsWithSubscriptions = client.pets.map(pet => {
       const petSubscription = client.subscriptions.find(sub => sub.petId === pet.id)
       return {

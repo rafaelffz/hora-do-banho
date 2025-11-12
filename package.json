@@ -19,6 +19,7 @@
     "@nuxt/ui": "^4.0.0",
     "@pinia/nuxt": "^0.11.2",
     "@tailwindcss/vite": "^4.1.13",
+    "date-fns": "^4.1.0",
     "drizzle-orm": "^0.44.5",
     "drizzle-zod": "^0.8.3",
     "maska": "^3.2.0",

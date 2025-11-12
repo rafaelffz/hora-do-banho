@@ -23,9 +23,13 @@ export interface SchedulingData {
     id: string
     clientId: string
     packageId: string | null
-    schedulingDate: number
-    status: "scheduled" | "confirmed" | "in_progress" | "completed" | "cancelled"
-    totalPrice: number
+    pickupDate: number
+    pickupTime: string | null
+    status: "scheduled" | "in_progress" | "completed" | "cancelled"
+    finalPrice: number
+    basePrice: number
+    adjustmentValue: number
+    adjustmentReason: string | null
     notes?: string | null
     startedAt: number | null
     completedAt: number | null
@@ -35,6 +39,13 @@ export interface SchedulingData {
   client: SchedulingClient
   package: SchedulingPackage | null
   pets: SchedulingPet[]
+  isFromSubscription?: boolean
+  subscription?: {
+    id: string
+    pickupDayOfWeek: number
+    pickupTime: string | null
+    recurrence: number
+  }
 }
 
 export interface SchedulingEvent {
@@ -48,7 +59,10 @@ export interface SchedulingEvent {
   }
   pets: SchedulingPet[]
   status: string
-  totalPrice: number
+  adjustmentValue: number
+  adjustmentReason: string | null
+  basePrice: number
+  finalPrice: number
 }
 
 export interface SchedulingGroup {

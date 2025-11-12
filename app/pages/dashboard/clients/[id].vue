@@ -751,7 +751,6 @@ const formatStartDate = (timestamp: number) => {
             subscription: hasSubscription ? petState.subscription : null,
           }"
           @submit="onSubmitPet"
-          @error="error => console.error(error)"
           class="space-y-5"
         >
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -932,13 +931,13 @@ const formatStartDate = (timestamp: number) => {
                   />
                 </UFormField>
 
-                <UFormField label="Status" v-if="!isRegister" class="md:col-span-2">
+                <!-- <UFormField label="Status" v-if="!isRegister" class="md:col-span-2">
                   <UCheckbox
                     v-model="petState.subscription.isActive"
                     label="Subscription ativa"
                     :disabled="isLoading"
                   />
-                </UFormField>
+                </UFormField> -->
               </div>
 
               <UFormField label="Observações da Subscription">

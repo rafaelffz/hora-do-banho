@@ -50,25 +50,29 @@ CREATE TABLE `scheduling_pets` (
 	`id` text PRIMARY KEY NOT NULL,
 	`scheduling_id` text NOT NULL,
 	`pet_id` text NOT NULL,
+	`package_price_id` text,
 	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
 	FOREIGN KEY (`scheduling_id`) REFERENCES `schedulings`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`pet_id`) REFERENCES `pets`(`id`) ON UPDATE no action ON DELETE cascade
+	FOREIGN KEY (`pet_id`) REFERENCES `pets`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`package_price_id`) REFERENCES `package_prices`(`id`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
 CREATE TABLE `schedulings` (
 	`id` text PRIMARY KEY NOT NULL,
-	`client_id` text NOT NULL,
-	`package_id` text,
-	`scheduling_date` integer NOT NULL,
+	`client_id` text,
+	`pickup_date` integer NOT NULL,
+	`pickup_time` text,
 	`status` text DEFAULT 'scheduled' NOT NULL,
-	`total_price` real NOT NULL,
+	`base_price` real NOT NULL,
+	`final_price` real NOT NULL,
+	`adjustment_value` real DEFAULT 0,
+	`adjustment_percentage` real DEFAULT 0,
+	`adjustment_reason` text,
 	`notes` text,
-	`started_at` integer,
-	`completed_at` integer,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL,
-	FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`package_id`) REFERENCES `packages`(`id`) ON UPDATE no action ON DELETE restrict
+	FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `pets` (

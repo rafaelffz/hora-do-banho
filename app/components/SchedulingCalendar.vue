@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { CalendarDate } from "@internationalized/date"
+import { formatISO } from "date-fns"
 import type { SchedulingData, SchedulingEvent } from "~/types/scheduling"
 
 interface Props {
@@ -7,18 +9,24 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const selectedDate = ref(new Date())
-const currentMonth = ref(new Date())
+function dateToCalendarDate(date: Date): CalendarDate {
+  return new CalendarDate(date.getFullYear(), date.getMonth() + 1, date.getDate())
+}
 
-// Converter agendamentos para eventos do calendário
+function calendarDateToDate(calendarDate: CalendarDate): Date {
+  return new Date(calendarDate.year, calendarDate.month - 1, calendarDate.day)
+}
+
+const selectedDate = shallowRef(dateToCalendarDate(new Date()))
+
 const calendarEvents = computed(() => {
   return props.schedulings.map(
     item =>
       ({
         id: item.scheduling.id,
         title: `${item.client.name} - ${item.pets.map(p => p.name).join(", ")}`,
-        date: new Date(item.scheduling.schedulingDate),
-        time: new Date(item.scheduling.schedulingDate).toLocaleTimeString("pt-BR", {
+        date: new Date(item.scheduling.pickupDate),
+        time: new Date(item.scheduling.pickupDate).toLocaleTimeString("pt-BR", {
           hour: "2-digit",
           minute: "2-digit",
         }),
@@ -28,94 +36,35 @@ const calendarEvents = computed(() => {
         },
         pets: item.pets,
         status: item.scheduling.status,
-        totalPrice: item.scheduling.totalPrice,
-      }) as SchedulingEvent
+        basePrice: item.scheduling.basePrice,
+        finalPrice: item.scheduling.finalPrice,
+        adjustmentValue: item.scheduling.adjustmentValue,
+        adjustmentReason: item.scheduling.adjustmentReason,
+      } as SchedulingEvent)
   )
 })
 
-// Agrupar eventos por data
 const eventsByDate = computed(() => {
   const grouped: Record<string, SchedulingEvent[]> = {}
 
   calendarEvents.value.forEach(event => {
-    const dateKey = event.date.toISOString().split("T")[0]
-    if (!grouped[dateKey]) {
-      grouped[dateKey] = []
+    const date = formatISO(event.date, { representation: "date" })
+
+    if (!grouped[date]) {
+      grouped[date] = []
     }
-    grouped[dateKey].push(event)
+
+    grouped[date].push(event)
   })
 
   return grouped
 })
 
-// Eventos do dia selecionado
 const selectedDateEvents = computed(() => {
-  const dateKey = selectedDate.value.toISOString().split("T")[0]
-  return eventsByDate.value[dateKey] || []
+  const selectedJsDate = calendarDateToDate(selectedDate.value)
+  const date = formatISO(selectedJsDate, { representation: "date" })
+  return eventsByDate.value[date] || []
 })
-
-// Gerar dias do mês atual
-const calendarDays = computed(() => {
-  const year = currentMonth.value.getFullYear()
-  const month = currentMonth.value.getMonth()
-
-  const firstDay = new Date(year, month, 1)
-  const lastDay = new Date(year, month + 1, 0)
-  const startDate = new Date(firstDay)
-  startDate.setDate(startDate.getDate() - firstDay.getDay())
-
-  const days = []
-  const current = new Date(startDate)
-
-  // Gerar 42 dias (6 semanas x 7 dias)
-  for (let i = 0; i < 42; i++) {
-    const dateKey = current.toISOString().split("T")[0]
-    const eventsForDate = eventsByDate.value[dateKey]
-    const hasEvents = eventsForDate ? eventsForDate.length > 0 : false
-
-    days.push({
-      date: new Date(current),
-      isCurrentMonth: current.getMonth() === month,
-      isToday: current.toDateString() === new Date().toDateString(),
-      isSelected: current.toDateString() === selectedDate.value.toDateString(),
-      hasEvents,
-      eventsCount: hasEvents ? eventsForDate?.length || 0 : 0,
-    })
-
-    current.setDate(current.getDate() + 1)
-  }
-
-  return days
-})
-
-const monthNames = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-]
-
-const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
-
-const currentMonthName = computed(() => {
-  return `${monthNames[currentMonth.value.getMonth()]} ${currentMonth.value.getFullYear()}`
-})
-
-const calendarStatusColors: Record<string, string> = {
-  scheduled: "bg-blue-500",
-  confirmed: "bg-green-500",
-  in_progress: "bg-yellow-500",
-  completed: "bg-gray-500",
-  cancelled: "bg-red-500",
-}
 
 const statusLabels: Record<string, string> = {
   scheduled: "Agendado",
@@ -125,30 +74,46 @@ const statusLabels: Record<string, string> = {
   cancelled: "Cancelado",
 }
 
-function selectDate(day: any) {
-  selectedDate.value = day.date
+function getColorByDate(date: Date) {
+  const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const dateStr = formatISO(localDate, { representation: "date" })
+  const eventsForDate = eventsByDate.value[dateStr]
+
+  if (!eventsForDate || eventsForDate.length === 0) {
+    return undefined
+  }
+
+  const hasConfirmed = eventsForDate.some(event => event.status === "confirmed")
+  const hasInProgress = eventsForDate.some(event => event.status === "in_progress")
+  const hasCancelled = eventsForDate.some(event => event.status === "cancelled")
+  const hasCompleted = eventsForDate.some(event => event.status === "completed")
+
+  if (hasCancelled) return "error"
+  if (hasInProgress) return "warning"
+  if (hasConfirmed) return "success"
+  if (hasCompleted) return "neutral"
+
+  return "primary"
 }
 
-function previousMonth() {
-  currentMonth.value = new Date(
-    currentMonth.value.getFullYear(),
-    currentMonth.value.getMonth() - 1,
-    1
-  )
-}
+function getStatusColor(
+  status: string
+): "primary" | "success" | "warning" | "neutral" | "error" | "secondary" | "info" {
+  const statusColors: Record<
+    string,
+    "primary" | "success" | "warning" | "neutral" | "error" | "secondary" | "info"
+  > = {
+    scheduled: "neutral",
+    in_progress: "warning",
+    completed: "success",
+    cancelled: "error",
+  }
 
-function nextMonth() {
-  currentMonth.value = new Date(
-    currentMonth.value.getFullYear(),
-    currentMonth.value.getMonth() + 1,
-    1
-  )
+  return statusColors[status] || "primary"
 }
 
 function goToToday() {
-  const today = new Date()
-  currentMonth.value = new Date(today.getFullYear(), today.getMonth(), 1)
-  selectedDate.value = today
+  selectedDate.value = dateToCalendarDate(new Date())
 }
 
 function formatCurrency(value: number) {
@@ -157,86 +122,41 @@ function formatCurrency(value: number) {
     currency: "BRL",
   }).format(value)
 }
-
-function getSizeLabel(size: string | null) {
-  const sizeLabels: Record<string, string> = {
-    small: "Pequeno",
-    medium: "Médio",
-    large: "Grande",
-  }
-  return size ? sizeLabels[size] || size : "N/A"
-}
 </script>
 
 <template>
   <div class="flex flex-col lg:flex-row gap-6">
-    <!-- Calendário -->
     <div class="flex-1">
       <div
         class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
       >
-        <!-- Header do calendário -->
         <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-bold">{{ currentMonthName }}</h2>
+          <h2 class="text-xl font-bold">Calendário de Agendamentos</h2>
           <div class="flex items-center gap-2">
             <UButton variant="outline" size="sm" @click="goToToday"> Hoje </UButton>
-            <UButton
-              variant="ghost"
-              size="sm"
-              icon="i-tabler-chevron-left"
-              @click="previousMonth"
-            />
-            <UButton variant="ghost" size="sm" icon="i-tabler-chevron-right" @click="nextMonth" />
           </div>
         </div>
 
-        <!-- Dias da semana -->
-        <div class="grid grid-cols-7 gap-1 mb-2">
-          <div
-            v-for="day in weekDays"
-            :key="day"
-            class="p-2 text-center text-sm font-medium text-gray-500 dark:text-gray-400"
-          >
-            {{ day }}
-          </div>
-        </div>
-
-        <!-- Dias do mês -->
-        <div class="grid grid-cols-7 gap-1">
-          <button
-            v-for="day in calendarDays"
-            :key="day.date.toISOString()"
-            @click="selectDate(day)"
-            :class="[
-              'relative p-2 h-12 text-sm transition-colors',
-              'hover:bg-gray-100 dark:hover:bg-gray-700',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500',
-              {
-                'text-gray-400 dark:text-gray-600': !day.isCurrentMonth,
-                'text-gray-900 dark:text-gray-100': day.isCurrentMonth,
-                'bg-primary-500 text-white': day.isSelected,
-                'bg-primary-100 dark:bg-primary-900': day.isToday && !day.isSelected,
-              },
-            ]"
-          >
-            {{ day.date.getDate() }}
-
-            <!-- Indicador de eventos -->
-            <div v-if="day.hasEvents" class="absolute bottom-1 left-1/2 transform -translate-x-1/2">
-              <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-            </div>
-          </button>
-        </div>
+        <UCalendar v-model="selectedDate">
+          <template #day="{ day }">
+            <UChip
+              :show="!!getColorByDate(day.toDate('America/Sao_Paulo'))"
+              :color="getColorByDate(day.toDate('America/Sao_Paulo'))"
+              size="2xs"
+            >
+              {{ day.day }}
+            </UChip>
+          </template>
+        </UCalendar>
       </div>
     </div>
 
-    <!-- Lista de eventos do dia selecionado -->
     <div class="w-full lg:w-96">
       <div
         class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
       >
         <h3 class="text-lg font-bold mb-4">
-          Agendamentos - {{ selectedDate.toLocaleDateString("pt-BR") }}
+          Agendamentos - {{ calendarDateToDate(selectedDate).toLocaleDateString("pt-BR") }}
         </h3>
 
         <div v-if="selectedDateEvents.length === 0" class="text-center py-8">
@@ -248,49 +168,67 @@ function getSizeLabel(size: string | null) {
           <div
             v-for="event in selectedDateEvents"
             :key="event.id"
-            class="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+            class="border border-l-4 rounded-lg p-4 space-y-4"
+            :class="{
+              'border-l-green-500': event.status === 'completed',
+              'border-l-red-500': event.status === 'cancelled',
+            }"
           >
-            <!-- Status e horário -->
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-2">
-                <div
-                  :class="[
-                    'w-3 h-3 rounded-full',
-                    calendarStatusColors[event.status] || 'bg-gray-500',
-                  ]"
-                ></div>
-                <span class="text-sm font-medium">
+                <UBadge :color="getStatusColor(event.status)" variant="subtle">
                   {{ statusLabels[event.status] || event.status }}
-                </span>
+                </UBadge>
               </div>
-              <span class="text-sm text-gray-500">{{ event.time }}</span>
+
+              <span class="text-sm text-gray-500" v-if="event.time !== '00:00'">
+                {{ event.time }}
+              </span>
             </div>
 
-            <!-- Cliente -->
-            <h4 class="font-semibold mb-1">{{ event.client.name }}</h4>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-              {{ event.client.phone }}
-            </p>
+            <div>
+              <h4 class="font-semibold">{{ event.client.name }}</h4>
+              <p class="text-sm text-muted flex items-center gap-1 mt-1" v-if="event.client.phone">
+                <Icon name="i-tabler-phone" size="16" />
+                {{ event.client.phone }}
+              </p>
+            </div>
 
-            <!-- Pets -->
-            <div class="mb-2">
+            <div>
               <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pets:</p>
               <div class="flex flex-wrap gap-1">
-                <span
-                  v-for="pet in event.pets"
-                  :key="pet.id"
-                  class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                >
-                  {{ pet.name }} ({{ getSizeLabel(pet.size) }})
-                </span>
+                <UBadge v-for="pet in event.pets" :key="pet.id" variant="subtle">
+                  {{ pet.name }}
+                </UBadge>
               </div>
             </div>
 
-            <!-- Preço -->
-            <div class="flex justify-between items-center">
-              <span class="text-sm font-bold text-green-600">
-                {{ formatCurrency(event.totalPrice) }}
-              </span>
+            <div class="flex flex-col gap-1">
+              <div class="flex gap-1 items-center">
+                <span class="text-muted font-medium">Preço Base:</span>
+                <span class="font-bold">
+                  {{ formatCurrency(event.basePrice) }}
+                </span>
+              </div>
+
+              <div class="flex gap-1 items-center">
+                <span class="text-muted font-medium">Ajuste:</span>
+                <span class="font-bold">
+                  {{ formatCurrency(event.adjustmentValue) }}
+                </span>
+              </div>
+
+              <div v-if="event.adjustmentReason">
+                <span class="text-muted font-medium">Motivo Ajuste:</span>
+                <span class="font-bold"> {{ event.adjustmentReason }} </span>
+              </div>
+
+              <div class="flex gap-1 items-center">
+                <span class="text-muted font-medium">Preço Final:</span>
+                <span class="font-bold text-green-500">
+                  {{ formatCurrency(event.finalPrice) }}
+                </span>
+              </div>
             </div>
           </div>
         </div>

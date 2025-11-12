@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "77288893-a118-469e-b237-36c511130f15",
+  "id": "09a19b75-d7b0-497c-ae4f-23378cce6786",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "users": {
@@ -345,8 +345,22 @@
           "notNull": true,
           "autoincrement": false
         },
+        "package_price_id": {
+          "name": "package_price_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -380,6 +394,19 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
+        },
+        "scheduling_pets_package_price_id_package_prices_id_fk": {
+          "name": "scheduling_pets_package_price_id_package_prices_id_fk",
+          "tableFrom": "scheduling_pets",
+          "tableTo": "package_prices",
+          "columnsFrom": [
+            "package_price_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -400,21 +427,21 @@
           "name": "client_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "package_id": {
-          "name": "package_id",
-          "type": "text",
-          "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "scheduling_date": {
-          "name": "scheduling_date",
+        "pickup_date": {
+          "name": "pickup_date",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "pickup_time": {
+          "name": "pickup_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "status": {
@@ -425,30 +452,46 @@
           "autoincrement": false,
           "default": "'scheduled'"
         },
-        "total_price": {
-          "name": "total_price",
+        "base_price": {
+          "name": "base_price",
           "type": "real",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "notes": {
-          "name": "notes",
+        "final_price": {
+          "name": "final_price",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "adjustment_value": {
+          "name": "adjustment_value",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        },
+        "adjustment_percentage": {
+          "name": "adjustment_percentage",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        },
+        "adjustment_reason": {
+          "name": "adjustment_reason",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "started_at": {
-          "name": "started_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "completed_at": {
-          "name": "completed_at",
-          "type": "integer",
+        "notes": {
+          "name": "notes",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -481,19 +524,6 @@
             "id"
           ],
           "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "schedulings_package_id_packages_id_fk": {
-          "name": "schedulings_package_id_packages_id_fk",
-          "tableFrom": "schedulings",
-          "tableTo": "packages",
-          "columnsFrom": [
-            "package_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },

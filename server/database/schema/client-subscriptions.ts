@@ -174,3 +174,15 @@ export function calculateNextPickupDate(
     return nextDate.getTime()
   }
 }
+
+export function extractManualAdjustment(
+  totalAdjustmentPercentage: number,
+  adjustmentReason: string | null,
+  estimatedPetCount: number = 2
+): number {
+  if (adjustmentReason === "desconto_multiplos_pets") {
+    const estimatedAutoDiscount = calculateMultiPetDiscount(estimatedPetCount)
+    return totalAdjustmentPercentage - estimatedAutoDiscount
+  }
+  return totalAdjustmentPercentage
+}

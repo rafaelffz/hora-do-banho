@@ -17,21 +17,29 @@ const {
   data: timelineSchedulings,
   pending: timelinePending,
   refresh: refreshTimeline,
-} = await useFetch<SchedulingData[]>("/api/schedulings", {
+} = useFetch<SchedulingData[]>("/api/schedulings", {
   query: { next30Days: "true" },
 })
 
-// Buscar todos os agendamentos para o calendário
+const {
+  data: schedulingStats,
+  pending: statsPending,
+  refresh: refreshStats,
+} = useFetch("/api/schedulings/stats", {
+  query: { next30Days: "true" },
+})
+
 const {
   data: calendarSchedulings,
   pending: calendarPending,
   refresh: refreshCalendar,
-} = await useFetch<SchedulingData[]>("/api/schedulings")
+} = useFetch<SchedulingData[]>("/api/schedulings")
 
 const schedulingsData = computed(() => {
   if (viewMode.value === "timeline") {
     return timelineSchedulings.value || []
   }
+
   return calendarSchedulings.value || []
 })
 
@@ -39,35 +47,28 @@ const isDataLoading = computed(() => {
   return viewMode.value === "timeline" ? timelinePending.value : calendarPending.value
 })
 
-function switchToTimeline() {
+const switchToTimeline = () => {
   viewMode.value = "timeline"
 }
 
-function switchToCalendar() {
+const switchToCalendar = () => {
   viewMode.value = "calendar"
 }
 
-async function refreshData() {
-  isLoading.value = true
-  try {
-    if (viewMode.value === "timeline") {
-      await refreshTimeline()
-    } else {
-      await refreshCalendar()
-    }
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Estatísticas dos próximos 30 dias
 const statistics = computed(() => {
-  const data = timelineSchedulings.value || []
+  if (schedulingStats.value) {
+    return {
+      total: schedulingStats.value.schedulings.total,
+      scheduled: schedulingStats.value.schedulings.scheduled,
+      completed: schedulingStats.value.schedulings.completed,
+      totalRevenue: schedulingStats.value.revenue.completed,
+      activeSubscriptions: schedulingStats.value.subscriptions.active,
+      estimatedRevenue: schedulingStats.value.revenue.estimated,
+    }
+  }
 
+  const data = timelineSchedulings.value || []
   const total = data.length
-  const confirmed = data.filter(
-    (item: SchedulingData) => item.scheduling.status === "confirmed"
-  ).length
   const scheduled = data.filter(
     (item: SchedulingData) => item.scheduling.status === "scheduled"
   ).length
@@ -77,155 +78,111 @@ const statistics = computed(() => {
 
   const totalRevenue = data
     .filter((item: SchedulingData) => item.scheduling.status === "completed")
-    .reduce((sum: number, item: SchedulingData) => sum + item.scheduling.totalPrice, 0)
+    .reduce((sum: number, item: SchedulingData) => sum + item.scheduling.finalPrice, 0)
 
   return {
     total,
-    confirmed,
     scheduled,
     completed,
     totalRevenue,
+    activeSubscriptions: 0,
+    estimatedRevenue: 0,
   }
 })
 
-function formatCurrency(value: number) {
+function formatCurrency(value: number | string) {
+  const numericValue = typeof value === "string" ? parseFloat(value) : value
+
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(value)
+  }).format(numericValue)
+}
+
+function handleRefresh() {
+  refreshTimeline()
+  refreshStats()
+  refreshCalendar()
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-3">
-          <Icon name="i-tabler-calendar" size="28" />
-          Agendamentos
-        </h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-1">
-          Gerencie seus agendamentos e visualize sua agenda
-        </p>
-      </div>
+    <div class="flex items-center justify-between">
+      <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
+        <Icon name="i-tabler-calendar" size="24" />
+        Agendamentos
+      </h1>
 
-      <div class="flex items-center gap-3">
-        <UButton
-          variant="outline"
-          icon="i-tabler-refresh"
-          :loading="isLoading"
-          @click="refreshData"
-        >
-          Atualizar
-        </UButton>
-        <UButton icon="i-tabler-plus"> Novo Agendamento </UButton>
+      <div class="flex gap-2">
+        <UButton icon="i-tabler-plus" class="cursor-pointer text-white"> Adicionar </UButton>
       </div>
     </div>
 
-    <!-- Estatísticas (apenas na view timeline) -->
     <div
       v-if="viewMode === 'timeline'"
-      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4"
     >
-      <div
-        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
-      >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total</p>
-            <p class="text-2xl font-bold">{{ statistics.total }}</p>
-          </div>
-          <Icon name="i-tabler-calendar-stats" size="24" class="text-blue-500" />
-        </div>
-      </div>
-
-      <div
-        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
-      >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Agendados</p>
-            <p class="text-2xl font-bold">{{ statistics.scheduled }}</p>
-          </div>
-          <Icon name="i-tabler-clock" size="24" class="text-yellow-500" />
-        </div>
-      </div>
-
-      <div
-        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
-      >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Confirmados</p>
-            <p class="text-2xl font-bold">{{ statistics.confirmed }}</p>
-          </div>
-          <Icon name="i-tabler-check" size="24" class="text-green-500" />
-        </div>
-      </div>
-
-      <div
-        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
-      >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Concluídos</p>
-            <p class="text-2xl font-bold">{{ statistics.completed }}</p>
-          </div>
-          <Icon name="i-tabler-check-circle" size="24" class="text-gray-500" />
-        </div>
-      </div>
-
-      <div
-        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
-      >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Receita</p>
-            <p class="text-xl font-bold text-green-600">
-              {{ formatCurrency(statistics.totalRevenue) }}
-            </p>
-          </div>
-          <Icon name="i-tabler-coins" size="24" class="text-green-500" />
-        </div>
-      </div>
+      <StatisticCard title="Total" :statistics="statistics.total" icon="i-tabler-calendar-event" />
+      <StatisticCard title="Agendados" :statistics="statistics.scheduled" icon="i-tabler-clock" />
+      <StatisticCard
+        title="Concluídos"
+        :statistics="statistics.completed"
+        icon="i-tabler-rosette-discount-check"
+      />
+      <StatisticCard
+        title="Pacotes Ativos"
+        :statistics="statistics.activeSubscriptions"
+        icon="i-tabler-package"
+      />
+      <StatisticCard
+        title="Receita Estimada"
+        :statistics="formatCurrency(statistics.estimatedRevenue)"
+        icon="i-tabler-trending-up"
+      />
+      <StatisticCard
+        title="Receita (até o momento)"
+        :statistics="formatCurrency(statistics.totalRevenue)"
+        icon="i-tabler-coins"
+      />
     </div>
 
-    <!-- Toggle de visualização -->
     <div class="flex items-center justify-center">
       <div
         class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-1"
       >
         <div class="grid grid-cols-2 gap-1">
-          <button
-            @click="switchToTimeline"
+          <UButton
+            color="primary"
             :class="[
-              'flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
-              viewMode === 'timeline'
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
+              'text-white flex items-center text-sm justify-center',
+              viewMode !== 'timeline'
+                ? 'dark:bg-gray-800 dark:text-white bg-white text-black '
+                : '',
             ]"
+            @click="switchToTimeline"
           >
             <Icon name="i-tabler-list" size="16" />
-            Timeline (30 dias)
-          </button>
-          <button
+            Próximos 30 dias
+          </UButton>
+
+          <UButton
             @click="switchToCalendar"
             :class="[
-              'flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
-              viewMode === 'calendar'
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
+              'text-white flex items-center text-sm justify-center',
+              viewMode !== 'calendar'
+                ? 'dark:bg-gray-800 dark:text-white bg-white text-black '
+                : '',
             ]"
+            color="primary"
           >
             <Icon name="i-tabler-calendar" size="16" />
             Calendário
-          </button>
+          </UButton>
         </div>
       </div>
     </div>
 
-    <!-- Loading state -->
     <div v-if="isDataLoading" class="flex justify-center py-12">
       <div class="flex items-center gap-3">
         <Icon name="i-tabler-loader-2" size="24" class="animate-spin" />
@@ -233,25 +190,22 @@ function formatCurrency(value: number) {
       </div>
     </div>
 
-    <!-- Conteúdo principal -->
     <div v-else>
-      <!-- Timeline View -->
       <div
         v-if="viewMode === 'timeline'"
-        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
       >
         <div class="flex items-center gap-2 mb-6">
-          <Icon name="i-tabler-timeline" size="20" />
-          <h2 class="text-lg font-semibold">Próximos 30 dias</h2>
+          <Icon name="i-tabler-timeline" size="24" />
+          <h2 class="text-xl font-semibold">Próximos 30 dias</h2>
         </div>
 
-        <SchedulingTimeline :schedulings="schedulingsData" />
+        <SchedulingTimeline :schedulings="schedulingsData" @refresh="handleRefresh" />
       </div>
 
-      <!-- Calendar View -->
       <div
         v-else
-        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
       >
         <div class="flex items-center gap-2 mb-6">
           <Icon name="i-tabler-calendar-month" size="20" />

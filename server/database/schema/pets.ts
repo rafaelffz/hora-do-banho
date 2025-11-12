@@ -87,3 +87,9 @@ export const updatePetSchema = insertPetSchema.extend({
 })
 
 export type UpdatePet = z4.infer<typeof updatePetSchema>
+
+export const updatePetWithSubscriptionsSchema = insertPetWithSubscriptionsSchema.extend({
+  id: z4.string(),
+})
+
+export type UpdatePetWithSubscriptions = z4.infer<typeof updatePetWithSubscriptionsSchema>
