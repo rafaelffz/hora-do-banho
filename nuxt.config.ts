@@ -25,6 +25,7 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
     "nuxt-auth-utils",
     "@nuxt/eslint",
+    "@vite-pwa/nuxt",
   ],
   colorMode: {
     preference: "system",
@@ -57,5 +58,29 @@ export default defineNuxtConfig({
   },
   vite: {
     plugins: [tailwindcss()],
+  },
+  pwa: {
+    manifest: {
+      name: "Hora do Banho",
+      short_name: "Hora do Banho",
+      description: "Agende o banho do seu pet de forma fácil e rápida!",
+      theme_color: "#ffffff",
+      icons: [
+        {
+          src: "web-app-manifest-192x192.png",
+          sizes: "192x192",
+          type: "image/png",
+        },
+        {
+          src: "web-app-manifest-512x512.png",
+          sizes: "512x512",
+          type: "image/png",
+        },
+      ],
+    },
+    devOptions: {
+      enabled: true,
+      type: "module",
+    },
   },
 })

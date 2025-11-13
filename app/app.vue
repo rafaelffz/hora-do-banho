@@ -6,6 +6,8 @@ const toaster = { position: "top-left" } as ToasterProps
 </script>
 
 <template>
+  <VitePwaManifest />
+
   <UApp :locale="pt_br" :toaster="toaster">
     <NuxtLayout>
       <NuxtPage />
