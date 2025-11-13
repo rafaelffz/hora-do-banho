@@ -71,7 +71,7 @@ if (import.meta.client) {
 
 <template>
   <div>
-    <UDashboardNavbar :toggle="false" class="fixed top-0 left-0 right-0 z-10 bg-default h-16">
+    <UDashboardNavbar :toggle="false" class="fixed top-0 left-0 right-0 z-50 bg-default h-16">
       <template #left>
         <Logo />
       </template>
@@ -89,23 +89,23 @@ if (import.meta.client) {
 
     <div
       ref="mainEl"
-      class="container mx-auto p-6 font-Inter w-full mt-16 min-h-full flex flex-col mb-16 overflow-y-auto"
+      class="container mx-auto p-6 font-Inter w-full min-h-full flex flex-col my-18 overflow-y-auto"
     >
       <slot />
     </div>
 
     <div
-      class="flex items-center justify-around h-14 bg-pink-400/95 w-full fixed left-1/2 -translate-x-1/2 bottom-0 px-4 border-t border-pink-300"
+      class="flex items-center justify-around h-14 bg-pink-400/95 w-2/3 md:w-1/3 rounded-full mb-2 md:mb-4 fixed left-1/2 -translate-x-1/2 p-1.5 z-50 bottom-0 border-t border-pink-300"
     >
       <NuxtLink
         v-for="item in menuItems"
         :key="item.title"
         :to="item.route"
-        class="flex items-center justify-center cursor-pointer text-white hover:text-gray-300 w-full py-2 transition-all duration-200"
-        :class="{ 'bg-pink-300/80 text-pink-800! rounded-lg': item.active }"
+        class="flex items-center justify-center cursor-pointer text-white hover:text-gray-300 size-full transition-all duration-200"
+        :class="{ 'bg-pink-300/85 text-pink-800! rounded-full': item.active }"
       >
         <UTooltip :text="item.title" :delay-duration="200">
-          <Icon :name="item.icon" size="28" />
+          <Icon :name="item.icon" size="26" />
         </UTooltip>
       </NuxtLink>
     </div>

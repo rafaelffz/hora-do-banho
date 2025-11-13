@@ -107,7 +107,7 @@ const onSubmit = async (event: FormSubmitEvent<InsertPackageWithPrices>) => {
           class="space-y-6"
           @submit="onSubmit"
         >
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <UFormField label="Nome" name="name" required>
               <UInput
                 class="w-full"
@@ -169,7 +169,7 @@ const onSubmit = async (event: FormSubmitEvent<InsertPackageWithPrices>) => {
               <div
                 v-for="(priceOption, index) in pricesByRecurrence"
                 :key="index"
-                class="relative grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg dark:border-gray-700"
+                class="relative grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border border-gray-200 rounded-lg dark:border-gray-700"
               >
                 <div
                   class="absolute -top-2 -left-2 flex items-center justify-center w-6 h-6 bg-primary text-white font-bold text-xs rounded-full z-10"
@@ -177,7 +177,7 @@ const onSubmit = async (event: FormSubmitEvent<InsertPackageWithPrices>) => {
                   {{ index + 1 }}
                 </div>
 
-                <UFormField label="Intervalo de dias">
+                <UFormField label="Intervalo de dias" class="col-span-2">
                   <UInput
                     class="w-full"
                     variant="subtle"
@@ -189,7 +189,7 @@ const onSubmit = async (event: FormSubmitEvent<InsertPackageWithPrices>) => {
                   />
                 </UFormField>
 
-                <UFormField label="Preço Mensal">
+                <UFormField label="Preço Mensal" class="col-span-2">
                   <UInput
                     class="w-full"
                     variant="subtle"
@@ -201,7 +201,7 @@ const onSubmit = async (event: FormSubmitEvent<InsertPackageWithPrices>) => {
                   />
                 </UFormField>
 
-                <div class="flex items-end justify-end">
+                <div class="flex items-end justify-end col-span-1">
                   <UButton
                     type="button"
                     variant="ghost"
@@ -221,7 +221,7 @@ const onSubmit = async (event: FormSubmitEvent<InsertPackageWithPrices>) => {
               color="info"
               variant="soft"
               title="Dica"
-              description="Defina preços diferentes para cada recorrência. Normalmente, quanto menor o intervalo (mais frequente), maior o preço total."
+              description="Defina preços diferentes para cada recorrência. Normalmente, quanto menor o intervalo (mais frequente), maior o preço mensal."
             />
           </div>
 
