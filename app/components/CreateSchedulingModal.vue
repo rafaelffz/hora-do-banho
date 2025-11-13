@@ -177,15 +177,6 @@ const onSubmit = async (event: FormSubmitEvent<FormData>) => {
     isLoading.value = false
   }
 }
-
-onMounted(() => {
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  tomorrow.setHours(9, 0, 0, 0)
-
-  formData.value.pickupDate = tomorrow.getTime()
-  formData.value.pickupTime = "09:00"
-})
 </script>
 
 <template>
