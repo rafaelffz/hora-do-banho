@@ -11,7 +11,7 @@ useHead({
 })
 
 const viewMode = ref<"timeline" | "calendar">("timeline")
-const isLoading = ref(false)
+const isCreateModalOpen = ref(false)
 
 const {
   data: timelineSchedulings,
@@ -21,11 +21,7 @@ const {
   query: { next30Days: "true" },
 })
 
-const {
-  data: schedulingStats,
-  pending: statsPending,
-  refresh: refreshStats,
-} = useFetch("/api/schedulings/stats", {
+const { data: schedulingStats, refresh: refreshStats } = useFetch("/api/schedulings/stats", {
   query: { next30Days: "true" },
 })
 
@@ -62,7 +58,6 @@ const statistics = computed(() => {
       scheduled: schedulingStats.value.schedulings.scheduled,
       completed: schedulingStats.value.schedulings.completed,
       totalRevenue: schedulingStats.value.revenue.completed,
-      activeSubscriptions: schedulingStats.value.subscriptions.active,
       estimatedRevenue: schedulingStats.value.revenue.estimated,
     }
   }
@@ -104,6 +99,19 @@ function handleRefresh() {
   refreshStats()
   refreshCalendar()
 }
+
+function openCreateModal() {
+  isCreateModalOpen.value = true
+}
+
+function closeCreateModal() {
+  isCreateModalOpen.value = false
+}
+
+function handleSchedulingCreated() {
+  handleRefresh()
+  closeCreateModal()
+}
 </script>
 
 <template>
@@ -115,15 +123,16 @@ function handleRefresh() {
       </h1>
 
       <div class="flex gap-2">
-        <UButton icon="i-tabler-plus" class="cursor-pointer text-white"> Adicionar </UButton>
+        <UButton icon="i-tabler-plus" class="cursor-pointer text-white" @click="openCreateModal">
+          Adicionar
+        </UButton>
       </div>
     </div>
 
     <div
       v-if="viewMode === 'timeline'"
-      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4"
+      class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3"
     >
-      <StatisticCard title="Total" :statistics="statistics.total" icon="i-tabler-calendar-event" />
       <StatisticCard title="Agendados" :statistics="statistics.scheduled" icon="i-tabler-clock" />
       <StatisticCard
         title="Concluídos"
@@ -131,17 +140,13 @@ function handleRefresh() {
         icon="i-tabler-rosette-discount-check"
       />
       <StatisticCard
-        title="Pacotes Ativos"
-        :statistics="statistics.activeSubscriptions"
-        icon="i-tabler-package"
-      />
-      <StatisticCard
         title="Receita Estimada"
         :statistics="formatCurrency(statistics.estimatedRevenue)"
         icon="i-tabler-trending-up"
       />
       <StatisticCard
-        title="Receita (até o momento)"
+        title="Receita"
+        subtitle="(até o momento)"
         :statistics="formatCurrency(statistics.totalRevenue)"
         icon="i-tabler-coins"
       />
@@ -215,5 +220,11 @@ function handleRefresh() {
         <SchedulingCalendar :schedulings="schedulingsData" />
       </div>
     </div>
+
+    <CreateSchedulingModal
+      v-model="isCreateModalOpen"
+      @close="closeCreateModal"
+      @success="handleSchedulingCreated"
+    />
   </div>
 </template>

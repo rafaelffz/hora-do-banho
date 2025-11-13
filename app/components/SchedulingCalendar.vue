@@ -83,15 +83,13 @@ function getColorByDate(date: Date) {
     return undefined
   }
 
-  const hasConfirmed = eventsForDate.some(event => event.status === "confirmed")
-  const hasInProgress = eventsForDate.some(event => event.status === "in_progress")
-  const hasCancelled = eventsForDate.some(event => event.status === "cancelled")
-  const hasCompleted = eventsForDate.some(event => event.status === "completed")
+  const hasInProgress = eventsForDate.every(event => event.status === "in_progress")
+  const hasCancelled = eventsForDate.every(event => event.status === "cancelled")
+  const hasCompleted = eventsForDate.every(event => event.status === "completed")
 
   if (hasCancelled) return "error"
   if (hasInProgress) return "warning"
-  if (hasConfirmed) return "success"
-  if (hasCompleted) return "neutral"
+  if (hasCompleted) return "success"
 
   return "primary"
 }
