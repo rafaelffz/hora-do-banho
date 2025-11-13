@@ -95,7 +95,7 @@ if (import.meta.client) {
     </div>
 
     <div
-      class="flex items-center justify-around h-14 bg-pink-400/95 w-2/3 md:w-1/3 rounded-full mb-2 md:mb-4 fixed left-1/2 -translate-x-1/2 p-1.5 z-50 bottom-0 border-t border-pink-300"
+      class="flex items-center justify-around h-14 bg-pink-400/95 w-2/3 md:w-1/3 rounded-full mb-4 fixed left-1/2 -translate-x-1/2 p-1.5 z-50 bottom-0 border-t border-pink-300"
     >
       <NuxtLink
         v-for="item in menuItems"
