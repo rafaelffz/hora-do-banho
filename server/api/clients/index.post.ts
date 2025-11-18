@@ -18,6 +18,41 @@ import {
 } from "~~/server/database/schema/client-subscriptions"
 import { sendZodError } from "~~/server/utils/sendZodError"
 
+const generateSchedulingDates = (
+  startDate: number,
+  recurrence: number,
+  pickupDayOfWeek: number,
+  maxDays: number = 30
+): number[] => {
+  const dates: number[] = []
+  const now = Date.now()
+  const start = new Date(Math.max(startDate, now))
+  const maxDate = new Date(now + maxDays * 24 * 60 * 60 * 1000)
+
+  let currentDate = new Date(start)
+  const currentDayOfWeek = currentDate.getDay()
+
+  let daysToAdd = pickupDayOfWeek - currentDayOfWeek
+  if (daysToAdd < 0) {
+    daysToAdd += 7
+  } else if (daysToAdd === 0) {
+    const currentHour = currentDate.getHours()
+    if (currentHour >= 12) {
+      daysToAdd = 7
+    }
+  }
+
+  currentDate.setDate(currentDate.getDate() + daysToAdd)
+
+  while (currentDate <= maxDate) {
+    dates.push(currentDate.getTime())
+
+    currentDate = new Date(currentDate.getTime() + recurrence * 24 * 60 * 60 * 1000)
+  }
+
+  return dates
+}
+
 export default defineAuthenticatedEventHandler(async event => {
   const result = await readValidatedBody(
     event,
@@ -183,7 +218,9 @@ export default defineAuthenticatedEventHandler(async event => {
               packagePriceId: string
             }> = []
 
-            Object.values(schedulingGroups).forEach((group: SchedulingGroup, index: number) => {
+            let schedulingIndex = 0
+
+            Object.values(schedulingGroups).forEach((group: SchedulingGroup) => {
               const totalBasePrice = group.subscriptions.reduce(
                 (sum: number, sub) => sum + sub.basePrice,
                 0
@@ -194,20 +231,32 @@ export default defineAuthenticatedEventHandler(async event => {
               )
 
               const firstSubscription = group.subscriptions[0]
+              const startDate = firstSubscription.nextPickupDate || firstSubscription.startDate
 
-              schedulingsToInsert.push({
-                clientId: client.id,
-                pickupDate: firstSubscription.nextPickupDate || firstSubscription.startDate,
-                basePrice: totalBasePrice,
-                finalPrice: totalFinalPrice,
-              })
+              const schedulingDates = generateSchedulingDates(
+                startDate,
+                group.recurrence,
+                group.pickupDayOfWeek,
+                30
+              )
 
-              group.subscriptions.forEach(subscription => {
-                schedulingPetsToInsert.push({
-                  schedulingIndex: index,
-                  petId: subscription.petId,
-                  packagePriceId: subscription.packagePriceId,
+              schedulingDates.forEach(date => {
+                schedulingsToInsert.push({
+                  clientId: client.id,
+                  pickupDate: date,
+                  basePrice: totalBasePrice,
+                  finalPrice: totalFinalPrice,
                 })
+
+                group.subscriptions.forEach(subscription => {
+                  schedulingPetsToInsert.push({
+                    schedulingIndex: schedulingIndex,
+                    petId: subscription.petId,
+                    packagePriceId: subscription.packagePriceId,
+                  })
+                })
+
+                schedulingIndex++
               })
             })
 
