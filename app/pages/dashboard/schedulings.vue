@@ -57,8 +57,6 @@ const statistics = computed(() => {
       total: schedulingStats.value.schedulings.total,
       scheduled: schedulingStats.value.schedulings.scheduled,
       completed: schedulingStats.value.schedulings.completed,
-      totalRevenue: schedulingStats.value.revenue.completed,
-      estimatedRevenue: schedulingStats.value.revenue.estimated,
     }
   }
 
@@ -129,26 +127,12 @@ function handleSchedulingCreated() {
       </div>
     </div>
 
-    <div
-      v-if="viewMode === 'timeline'"
-      class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3"
-    >
+    <div v-if="viewMode === 'timeline'" class="grid grid-cols-2 sm:grid-cols-2 gap-3">
       <StatisticCard title="Agendados" :statistics="statistics.scheduled" icon="i-tabler-clock" />
       <StatisticCard
         title="Concluídos"
         :statistics="statistics.completed"
         icon="i-tabler-rosette-discount-check"
-      />
-      <StatisticCard
-        title="Receita Estimada"
-        :statistics="formatCurrency(statistics.estimatedRevenue)"
-        icon="i-tabler-trending-up"
-      />
-      <StatisticCard
-        title="Receita"
-        subtitle="(até o momento)"
-        :statistics="formatCurrency(statistics.totalRevenue)"
-        icon="i-tabler-coins"
       />
     </div>
 

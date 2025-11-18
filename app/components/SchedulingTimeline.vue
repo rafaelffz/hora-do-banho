@@ -252,12 +252,6 @@ const getStatusColor = (status: string) => {
                     </div>
                   </div>
                 </div>
-
-                <div class="text-right">
-                  <p class="text-xl font-bold text-green-600">
-                    {{ formatCurrency(item.scheduling.finalPrice) }}
-                  </p>
-                </div>
               </div>
 
               <div>
